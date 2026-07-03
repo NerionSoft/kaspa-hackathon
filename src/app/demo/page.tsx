@@ -83,6 +83,7 @@ export default function DemoPage() {
         <span className="brand"><span className="dot" /><b>Kaspa Mission Control</b></span>
         {backend && <span className="backend">{backend === "kaspa" ? "kaspa · testnet-10 · LIVE" : "mock"}</span>}
         <div className="actions">
+          <a className="guidedlink" href="/showcase.html">Guided demo</a>
           <button className="runbtn" onClick={run} disabled={running}>{running ? "Starting…" : "▶ Run mission"}</button>
           <button className="settlebtn" onClick={settle} disabled={settling || !mission || released}>
             {released ? "✓ Settled" : settling ? "Releasing…" : "Settle & release escrow"}

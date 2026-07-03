@@ -1,0 +1,776 @@
+<title>Kaspa Mission Control — Guided Demo</title>
+<style>
+  :root{
+    --bg:#eef2f2; --surface:#fff; --surface-2:#eef4f3; --surface-3:#e6eeed;
+    --border:#cdd9d8; --border-strong:#b6c6c4;
+    --text:#0c1a17;               /* near-black */
+    --ink:#12332c;               /* dark, readable body */
+    --muted:#1c3a33;             /* dark (was grey) */
+    --kaspa:#0e9c86; --kaspa-bright:#2fd9bc; --kaspa-ink:#075246; --kaspa-wash:#e3f7f2;
+    --violet:#5a2f96; --violet-wash:#f2ecfb;
+    --ok:#1f7a33; --warn:#b8620a; --danger:#c1121f; --crit:#9d0208;
+    --shadow:0 1px 2px rgba(12,40,34,.08),0 4px 16px rgba(12,40,34,.07);
+    --shadow-lg:0 14px 44px rgba(12,40,34,.18);
+    --mono:ui-monospace,"SF Mono","Cascadia Code","JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,"Times New Roman",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:radial-gradient(900px 500px at 82% -12%,#d6f2ec 0%,transparent 55%),var(--bg);
+    color:var(--text);font-family:var(--sans);font-size:14px;line-height:1.45;overflow:hidden}
+  .mono{font-family:var(--mono)}
+  .label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .num{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  a{color:var(--kaspa-ink)}
+
+  .wrap{height:100vh;display:flex;flex-direction:column;max-width:1140px;margin:0 auto;padding:0 22px}
+
+  .top{display:flex;align-items:center;gap:12px;padding:14px 2px 8px;flex-wrap:wrap}
+  .brand{display:flex;align-items:center;gap:9px}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--kaspa-bright);box-shadow:0 0 9px var(--kaspa-bright)}
+  .brand b{font-size:13px;color:var(--text)}
+  .steps{display:flex;align-items:center;gap:5px;margin-left:6px}
+  .steps .s{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--muted);padding:3px 3px;font-weight:500}
+  .steps .s .n{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border-strong);display:grid;place-items:center;font-size:10px;color:var(--ink)}
+  .steps .s.active{color:var(--kaspa-ink);font-weight:700}
+  .steps .s.active .n{border-color:var(--kaspa);background:var(--kaspa-wash);color:var(--kaspa-ink)}
+  .steps .s.done .n{border-color:var(--ok);background:#e6f4e9;color:var(--ok)}
+  .steps .sep{width:12px;height:1.5px;background:var(--border-strong)}
+
+  .budgetwidget{margin-left:auto;display:flex;align-items:center;gap:12px;opacity:0;transform:translateY(-4px);transition:.4s}
+  .budgetwidget.show{opacity:1;transform:none}
+  .bw-g{width:150px}
+  .bw-g .r{display:flex;justify-content:space-between;align-items:baseline}
+  .bw-g .v{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--text)}
+  .bw-g .v small{font-size:10px;color:var(--muted);font-weight:500}
+  .bw-g .track{height:7px;border-radius:99px;background:#d5e2e0;border:1px solid var(--border);overflow:hidden;margin-top:3px}
+  .bw-g .fill{height:100%;width:100%;background:linear-gradient(90deg,var(--kaspa),var(--kaspa-bright));transition:width .7s cubic-bezier(.4,0,.2,1),background .4s}
+  .bw-g.low .fill{background:linear-gradient(90deg,var(--warn),#f0a33a)}
+  .bw-g.crit .fill{background:linear-gradient(90deg,var(--danger),#e8636b)}
+  .bw-chips{display:flex;gap:10px}
+  .bw-chips .c{display:flex;flex-direction:column}
+  .bw-chips .c .v{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text)}
+  .bw-chips .c .v.teal{color:var(--kaspa-ink)}
+
+  .stage{flex:1;position:relative;min-height:0}
+  .scene{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;transform:translateY(10px);
+    pointer-events:none;transition:opacity .4s,transform .4s;min-height:0}
+  .scene.active{opacity:1;transform:none;pointer-events:auto}
+  .scene-inner{flex:1;display:flex;flex-direction:column;min-height:0;overflow-y:auto;padding:8px 4px 4px}
+  .scene[data-scene="0"] .scene-inner{justify-content:center}
+  .sc-h{font-size:19px;margin:0 0 3px;letter-spacing:-.01em;color:var(--text)}
+  .sc-sub{color:var(--ink);font-size:13px;margin:0 0 16px;max-width:760px}
+
+  .nav{display:flex;align-items:center;gap:10px;padding:10px 2px 16px;flex-wrap:wrap}
+  .btn{font-family:var(--mono);font-size:12.5px;color:var(--text);background:var(--surface);border:1px solid var(--border-strong);
+    border-radius:6px;padding:9px 15px;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:7px;box-shadow:var(--shadow)}
+  .btn:hover{border-color:var(--kaspa)}
+  .btn.primary{color:#032a24;background:var(--kaspa-bright);border-color:var(--kaspa);font-weight:700}
+  .btn.primary:hover{background:#4fe6cd}
+  .btn.ghost{box-shadow:none;background:transparent;border-color:var(--border)}
+  .btn:disabled{opacity:.4;cursor:default}
+  .btn:focus-visible{outline:2px solid var(--kaspa);outline-offset:2px}
+  .nav .sp{flex:1}
+  .hint{font-family:var(--mono);font-size:11px;color:var(--kaspa-ink);font-weight:600}
+  .spd button{font-family:var(--mono);font-size:11px;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:4px;padding:5px 9px;cursor:pointer}
+  .spd button.on{color:var(--kaspa-ink);border-color:var(--kaspa);background:var(--kaspa-wash);font-weight:700}
+
+  /* SCENE 0 */
+  .hook{max-width:770px;margin:0 auto;text-align:center}
+  .hook .eye{color:var(--kaspa-ink);font-weight:700}
+  .hook h1{font-size:29px;line-height:1.15;letter-spacing:-.02em;margin:12px 0 8px;text-wrap:balance;color:var(--text)}
+  .hook h1 b{color:var(--kaspa)}
+  .hook .stats{display:flex;justify-content:center;gap:14px;margin:20px 0}
+  .hook .stat{flex:1;max-width:240px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:14px;box-shadow:var(--shadow);text-align:left}
+  .hook .stat .v{font-family:var(--mono);font-size:24px;font-weight:700;color:var(--danger);letter-spacing:-.02em}
+  .hook .stat .k{font-size:11.5px;color:var(--ink);margin-top:4px;line-height:1.35}
+  .hook .stat .src{font-family:var(--mono);font-size:9.5px;color:var(--muted);margin-top:6px}
+  .hook .sol{font-size:13.5px;color:var(--ink);max-width:640px;margin:0 auto}
+  .hook .sol b{color:var(--kaspa-ink)}
+  .hook .sol .no{color:var(--kaspa-ink);font-weight:700}
+
+  /* SCENE 1 */
+  .missions{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:900px}
+  .mcard{background:var(--surface);border:1.5px solid var(--border);border-radius:9px;padding:15px;cursor:pointer;transition:.22s;box-shadow:var(--shadow);position:relative}
+  .mcard:hover{border-color:var(--kaspa);transform:translateY(-2px)}
+  .mcard.sel{border-color:var(--kaspa);box-shadow:0 0 0 3px rgba(14,156,134,.16),var(--shadow)}
+  .mcard .badge{font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--kaspa-ink);background:var(--kaspa-wash);border:1px solid #bfe9df;border-radius:99px;padding:2px 8px;display:inline-block;font-weight:600}
+  .mcard h3{font-size:14.5px;margin:10px 0 6px;color:var(--text)}
+  .mcard .row{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--muted);padding:3px 0;border-top:1px dashed var(--border)}
+  .mcard .row b{color:var(--text)}
+  .mcard .check{position:absolute;top:12px;right:12px;color:var(--kaspa-ink);opacity:0;transition:.22s;font-family:var(--mono);font-weight:700;font-size:11px}
+  .mcard.sel .check{opacity:1}
+
+  /* SCENE 2 */
+  .orch{display:grid;grid-template-columns:1fr 310px;gap:20px;max-width:960px}
+  @media(max-width:820px){.orch{grid-template-columns:1fr}}
+  .think{display:flex;align-items:center;gap:10px;margin-bottom:13px;min-height:24px}
+  .brain{width:26px;height:26px;border-radius:7px;background:var(--kaspa-wash);border:1px solid #bfe9df;display:grid;place-items:center;color:var(--kaspa-ink);flex:none;font-weight:700}
+  .think .txt{font-size:13px;color:var(--ink)} .think .txt b{color:var(--kaspa-ink)}
+  .rolebank{display:flex;flex-wrap:wrap;gap:8px}
+  .role{font-family:var(--mono);font-size:11.5px;padding:7px 11px;border-radius:6px;border:1.5px solid var(--border-strong);background:var(--surface);color:var(--ink);transition:.35s;font-weight:500}
+  .role.picked{border-color:var(--kaspa);background:var(--kaspa-wash);color:var(--kaspa-ink);transform:scale(1.03);font-weight:700}
+  .role.picked::after{content:"✓";margin-left:7px;color:var(--kaspa-ink)}
+  .role.rejected{opacity:.5;text-decoration:line-through;text-decoration-color:var(--muted);color:var(--muted)}
+  .rejnote{font-size:11.5px;color:var(--ink);margin:10px 0;min-height:16px}
+  .rejnote b{color:var(--danger)}
+  .team{display:flex;flex-direction:column;gap:7px}
+  .trow{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:9px 11px;border:1px solid var(--border);border-radius:6px;background:var(--surface);opacity:0;transform:translateX(-10px);transition:.4s;box-shadow:var(--shadow)}
+  .trow.in{opacity:1;transform:none}
+  .trow .r{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--text)}
+  .trow .m{font-family:var(--mono);font-size:10.5px;color:var(--violet);background:var(--violet-wash);border:1px solid #ddd0f0;border-radius:4px;padding:2px 7px;opacity:0;transition:.35s;font-weight:600}
+  .trow .m.in{opacity:1} .trow .m .tier{color:var(--warn)}
+  .trow .b{font-family:var(--mono);font-size:11.5px;font-variant-numeric:tabular-nums;opacity:0;transition:.35s;min-width:56px;text-align:right;color:var(--text);font-weight:600}
+  .trow .b.in{opacity:1}
+  .rpanel{align-self:start;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:15px;box-shadow:var(--shadow);position:sticky;top:0}
+  .rpanel .big{font-family:var(--mono);font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--text)}
+  .rpanel .big small{font-size:12px;color:var(--muted);font-weight:500}
+  .alloc-track{height:11px;border-radius:99px;background:#d5e2e0;border:1px solid var(--border);overflow:hidden;display:flex;margin:9px 0}
+  .alloc-track .seg{height:100%;width:0;transition:width .55s}
+  .alloc-legend{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .alloc-legend .l{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink)}
+  .alloc-legend .l .sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px}
+  .costnote{margin-top:12px;font-size:11.5px;color:var(--ink);border-top:1px dashed var(--border);padding-top:10px}
+  .costnote b{color:var(--kaspa-ink)}
+
+  /* SCENE 3 */
+  .stagebar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+  .stagechip{font-family:var(--mono);font-size:10.5px;padding:4px 9px;border-radius:99px;border:1.5px solid var(--border-strong);background:var(--surface);color:var(--ink);font-weight:600}
+  .stagechip.active{border-color:var(--kaspa);background:var(--kaspa-wash);color:var(--kaspa-ink);box-shadow:0 0 0 3px rgba(14,156,134,.12)}
+  .stagechip.done{border-color:var(--ok);background:#e6f4e9;color:var(--ok)}
+  .stagechip.par::before{content:"⇉ ";color:var(--kaspa-ink)}
+  .stagesep{color:var(--muted)}
+  .lane{display:grid;gap:12px;grid-template-columns:1fr}
+  .lane.par{grid-template-columns:1fr 1fr}
+  @media(max-width:760px){.lane.par{grid-template-columns:1fr}}
+  .wcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:15px;box-shadow:var(--shadow);display:flex;flex-direction:column;gap:10px}
+  .wcard .wh{display:flex;align-items:center;gap:9px}
+  .wcard .ic{width:32px;height:32px;border-radius:8px;background:var(--kaspa-wash);border:1px solid #bfe9df;display:grid;place-items:center;flex:none}
+  .wcard .ic svg{width:17px;height:17px;stroke:var(--kaspa-ink);fill:none;stroke-width:1.7}
+  .wcard .role{font-family:var(--mono);font-size:13.5px;font-weight:700;color:var(--text)}
+  .wcard .model{font-family:var(--mono);font-size:10px;color:var(--violet);background:var(--violet-wash);border:1px solid #ddd0f0;border-radius:4px;padding:2px 6px;font-weight:600;margin-left:auto}
+  .wcard .act{font-size:12.5px;color:var(--ink);min-height:18px}
+  .wcard .act .cur{color:var(--kaspa-ink);font-family:var(--mono)}
+  .cbar{}
+  .cbar .top{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink)}
+  .cbar .top .u{font-weight:700;color:var(--text)} .cbar .top .cap{color:var(--muted)}
+  .cbar .tr{height:6px;border-radius:99px;background:#d5e2e0;margin-top:4px;overflow:hidden}
+  .cbar .tr i{display:block;height:100%;width:0;background:var(--ok);border-radius:99px;transition:width .55s}
+  .cbar.over .tr i{background:var(--danger)}
+  .cbar .vd{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.06em;color:var(--ok);margin-top:3px;font-weight:700}
+  .cbar.over .vd{color:var(--danger)}
+  .wcommits{display:flex;flex-direction:column;gap:5px;max-height:150px;overflow-y:auto}
+  .wc{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-family:var(--mono);font-size:11px;padding:5px 8px;border:1px solid var(--border);border-left:3px solid var(--border-strong);border-radius:4px;background:var(--surface-2);animation:drop .4s both;cursor:pointer;color:var(--text)}
+  @keyframes drop{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+  .wc.confirmed{border-left-color:var(--kaspa-bright);background:#fff}
+  .wc .ty{font-weight:700} .wc .dl{color:var(--warn)} .wc .dl.zero{color:var(--muted)}
+  .wc .cf{font-size:9px;text-transform:uppercase;letter-spacing:.05em;padding:1px 5px;border-radius:3px;border:1px solid;font-weight:600}
+  .wc .cf.p{color:var(--warn);border-color:#e6c48f;background:#fbf1e2}
+  .wc .cf.c{color:var(--kaspa-ink);border-color:#bfe9df;background:var(--kaspa-wash)}
+
+  /* SCENE 4 — PDF report */
+  .report{display:grid;grid-template-columns:1fr 300px;gap:18px;max-width:980px;align-items:start}
+  @media(max-width:820px){.report{grid-template-columns:1fr}}
+  .paperwrap{max-height:calc(100vh - 230px);overflow-y:auto;border-radius:8px;padding:2px}
+  .paper{background:#fff;border:1px solid var(--border);border-radius:3px;box-shadow:0 8px 30px rgba(12,40,34,.14);padding:34px 38px;color:#12211d;font-family:var(--serif)}
+  .paper .pcover{border-bottom:2px solid #0c1a17;padding-bottom:14px;margin-bottom:16px}
+  .paper .pk{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--kaspa-ink);font-weight:700}
+  .paper h1{font-size:23px;margin:8px 0 6px;letter-spacing:-.01em;color:#0c1a17}
+  .paper .pmeta{display:flex;gap:20px;font-family:var(--mono);font-size:10.5px;color:#33413e}
+  .paper .pmeta b{color:#0c1a17}
+  .paper h2{font-family:var(--sans);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--kaspa-ink);margin:20px 0 8px;border-bottom:1px solid #e0e8e6;padding-bottom:5px;font-weight:700}
+  .paper p{font-size:13.5px;line-height:1.55;margin:0 0 8px;color:#1a2b26}
+  .sevchart{display:flex;gap:6px;align-items:flex-end;height:70px;margin:6px 0 4px}
+  .sevchart .sb{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;justify-content:flex-end;height:100%}
+  .sevchart .sb .bar{width:100%;border-radius:3px 3px 0 0;min-height:6px}
+  .sevchart .sb .n{font-family:var(--mono);font-size:13px;font-weight:700;color:#0c1a17}
+  .sevchart .sb .lb{font-family:var(--mono);font-size:9px;text-transform:uppercase;letter-spacing:.05em}
+  .ftable{width:100%;border-collapse:collapse;font-size:12px}
+  .ftable th{text-align:left;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:#33413e;border-bottom:1px solid #cfd9d6;padding:6px 4px}
+  .ftable td{padding:8px 4px;border-bottom:1px solid #eaefed;vertical-align:top;color:#1a2b26}
+  .ftable .sev{font-family:var(--mono);font-size:9.5px;font-weight:700;text-transform:uppercase;padding:2px 7px;border-radius:99px;white-space:nowrap}
+  .sev-crit{color:#fff;background:var(--crit)} .sev-high{color:#fff;background:var(--danger)}
+  .sev-med{color:#5a3400;background:#ffd79a} .sev-low{color:#0c3d18;background:#c6ecce}
+  .ftable .pf{font-family:var(--mono);font-size:10px;color:var(--kaspa-ink);cursor:pointer;border-bottom:1px dashed #9dd}
+  .pfoot{margin-top:22px;border-top:1px solid #e0e8e6;padding-top:10px;font-family:var(--mono);font-size:9.5px;color:#33413e;display:flex;justify-content:space-between}
+  .pfoot .teal{color:var(--kaspa-ink)}
+
+  .rside{display:flex;flex-direction:column;gap:14px;min-height:0}
+  .dlrow{display:flex;gap:8px}
+  .dlrow .btn{flex:1;justify-content:center}
+  .dlrow .btn.pdf{background:var(--danger);border-color:var(--danger);color:#fff;font-weight:700}
+  .dlrow .btn.pdf:hover{background:#d61f2b}
+  .auditcard{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:15px;box-shadow:var(--shadow)}
+  .auditcard h4{margin:0 0 10px;font-size:12px;color:var(--text)}
+  .auditrow{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11.5px;padding:4px 0;border-top:1px dashed var(--border);color:var(--ink)}
+  .auditrow b{color:var(--text)} .auditrow .teal{color:var(--kaspa-ink)}
+  .txlist{background:var(--surface);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;display:flex;flex-direction:column;max-height:260px}
+  .txlist .th{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+  .txlist .tl{overflow-y:auto;padding:8px}
+  .txitem{display:grid;grid-template-columns:auto 1fr auto;gap:8px;align-items:center;font-family:var(--mono);font-size:10.5px;padding:6px 8px;border-radius:4px;cursor:pointer;color:var(--text)}
+  .txitem:hover{background:var(--surface-2)}
+  .txitem .ty{font-weight:700} .txitem .id{color:var(--kaspa-ink);border-bottom:1px dashed #9dd}
+
+  /* modals */
+  .scrim{position:fixed;inset:0;background:rgba(12,30,26,.34);backdrop-filter:blur(2px);display:grid;place-items:center;z-index:60;opacity:0;pointer-events:none;transition:opacity .3s;padding:20px}
+  .scrim.show{opacity:1;pointer-events:auto}
+  .modal{width:min(470px,94vw);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px 20px;box-shadow:var(--shadow-lg);transform:translateY(10px);transition:transform .3s;max-height:90vh;overflow-y:auto}
+  .scrim.show .modal{transform:none}
+  .modal .mh{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .modal .mh .ty{font-family:var(--mono);font-weight:700;font-size:14px;color:var(--text)}
+  .modal .mh .cf{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--kaspa-ink);background:var(--kaspa-wash);border:1px solid #bfe9df;border-radius:99px;padding:3px 9px;font-weight:600}
+  .modal .kv{display:grid;grid-template-columns:auto 1fr;gap:7px 14px;font-size:12px}
+  .modal .kv .k{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);align-self:center}
+  .modal .kv .v{font-family:var(--mono);word-break:break-all;color:var(--text)}
+  .modal .mfoot{margin-top:16px;display:flex;justify-content:flex-end;gap:8px}
+
+  .gate{width:min(500px,94vw);background:var(--surface);border:1px solid #eab8b8;border-radius:10px;padding:20px 22px;box-shadow:var(--shadow-lg);transform:translateY(10px);transition:transform .3s}
+  .scrim.show .gate{transform:none}
+  .gate .gt{display:flex;align-items:center;gap:10px}
+  .gate .pi{width:26px;height:26px;border-radius:5px;background:#fadede;display:grid;place-items:center;color:var(--danger);font-family:var(--mono);font-size:11px;font-weight:700}
+  .gate .gk{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--danger);font-weight:700}
+  .gate h2{margin:12px 0 6px;font-size:17px;color:var(--text)}
+  .gate p{margin:0;color:var(--ink);font-size:13px} .gate p b{color:var(--text)}
+  .gate .gd{margin:14px 0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12px}
+  .gate .gd .k{font-family:var(--mono);font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);align-self:center}
+  .gate .gd .v{font-family:var(--mono);color:var(--text)} .gate .gd .v.tgt{color:var(--warn)}
+  .gate .ga{display:flex;gap:10px;margin-top:16px} .gate .ga .btn{flex:1;justify-content:center;padding:10px}
+  .gate .btn.deny{border-color:#e6a9a9;color:var(--danger)}
+  .gate .btn.approve{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:700}
+  .gate .gn{margin-top:12px;font-family:var(--mono);font-size:10px;color:var(--muted)}
+
+  /* SCENE 5 — marketplace / platform vision */
+  .mkt{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:16px;align-items:stretch;max-width:1000px;margin:0 auto;width:100%}
+  @media(max-width:860px){.mkt{grid-template-columns:1fr}}
+  .mkt-col{display:flex;flex-direction:column;gap:9px}
+  .mkt-col .ch{display:flex;align-items:baseline;justify-content:space-between}
+  .mkt-col .ch .h{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--kaspa-ink);font-weight:700}
+  .mkt-col .ch .sub{font-family:var(--mono);font-size:9.5px;color:var(--muted)}
+  .reveal{opacity:0;transform:translateY(8px);transition:.45s}
+  .reveal.in{opacity:1;transform:none}
+  .dem-card,.team-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow)}
+  .dem-card{display:flex;align-items:center;justify-content:space-between;padding:10px 12px}
+  .dem-card .dom{font-size:12.5px;font-weight:650;color:var(--text)}
+  .dem-card .bud{font-family:var(--mono);font-size:11px;color:var(--kaspa-ink);background:var(--kaspa-wash);border:1px solid #bfe9df;border-radius:99px;padding:2px 8px;font-weight:600}
+  .dem-card.ex{border-color:var(--kaspa);box-shadow:0 0 0 2px rgba(14,156,134,.14),var(--shadow)}
+  .dem-card .tagx{font-family:var(--mono);font-size:8.5px;color:var(--kaspa-ink);text-transform:uppercase;letter-spacing:.06em;margin-left:6px}
+  .team-card{padding:11px 12px;display:flex;flex-direction:column;gap:5px}
+  .team-card .tt{display:flex;align-items:center;justify-content:space-between}
+  .team-card .tt b{font-size:12.5px;color:var(--text)}
+  .team-card .rep{font-family:var(--mono);font-size:10.5px;color:var(--warn);font-weight:700}
+  .team-card .tags{font-family:var(--mono);font-size:10px;color:var(--ink)}
+  .team-card .meta{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--muted)}
+  .team-card .meta .oc{color:var(--kaspa-ink)}
+  .mkt-hub{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    background:linear-gradient(180deg,#0c332c,#0a2925);border:1px solid var(--kaspa-ink);border-radius:12px;padding:20px 16px;color:#eafcf7;box-shadow:0 10px 34px rgba(7,82,70,.28)}
+  .mkt-hub .hk{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--kaspa-bright)}
+  .mkt-hub .ht{font-size:19px;font-weight:700;margin:6px 0 2px;letter-spacing:-.01em}
+  .mkt-hub .hs{font-size:11.5px;color:#a9e8db}
+  .mkt-hub .hchips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:13px}
+  .mkt-hub .hchips span{font-family:var(--mono);font-size:10px;padding:3px 8px;border-radius:99px;border:1px solid rgba(47,217,188,.4);color:#d6fbf2;background:rgba(47,217,188,.1)}
+  .mkt-hub .flowlbl{display:flex;justify-content:space-between;width:100%;margin-top:14px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:#7fd8c7}
+  .mkt-hub .flowlbl span::before{content:"◀ "}
+  .mkt-hub .flowlbl span:first-child::before{content:"▶ ";}
+  .insight{max-width:1000px;margin:16px auto 0;background:var(--kaspa-wash);border:1px solid #bfe9df;border-radius:9px;padding:12px 15px;font-size:12.5px;color:var(--kaspa-ink);display:flex;gap:10px;align-items:flex-start}
+  .insight b{color:var(--text)}
+  .insight .ib{font-family:var(--mono);color:var(--kaspa-ink);font-weight:700}
+  .mkt-cycle{max-width:1000px;margin:14px auto 0;display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center}
+  .mkt-cycle .cst{font-family:var(--mono);font-size:11px;color:var(--ink);background:var(--surface);border:1px solid var(--border);border-radius:99px;padding:6px 12px;font-weight:600}
+  .mkt-cycle .cst b{color:var(--kaspa-ink)}
+  .mkt-cycle .car{color:var(--kaspa-ink);font-weight:700}
+  .mkt-foot{max-width:1000px;margin:16px auto 0;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center}
+  .pill{font-family:var(--mono);font-size:12px;padding:7px 14px;border-radius:99px;border:1.5px solid var(--kaspa);color:var(--kaspa-ink);background:var(--surface);font-weight:700}
+
+  @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.05ms!important}}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><span class="dot"></span><b>Kaspa Mission Control</b></div>
+    <div class="steps" id="steps"></div>
+    <div class="budgetwidget" id="bw">
+      <div class="bw-g" id="bwg">
+        <div class="r"><span class="label">Budget</span><span class="v"><span id="bwLeft">12.0</span><small>/<span id="bwTotal">12</span></small></span></div>
+        <div class="track"><div class="fill" id="bwFill"></div></div>
+      </div>
+      <div class="bw-chips">
+        <div class="c"><span class="label">Txs</span><span class="v teal num" id="bwTx">0</span></div>
+        <div class="c"><span class="label">Human</span><span class="v teal num"><span id="bwHuman">0</span>%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" id="stage">
+    <section class="scene" data-scene="0"><div class="scene-inner"><div class="hook">
+      <span class="label eye">The problem with autonomous agent teams</span>
+      <h1>Multi-agent systems fail on <b>coordination</b> and <b>cost</b> — not intelligence.</h1>
+      <div class="stats">
+        <div class="stat"><div class="v">~25%</div><div class="k">success rate of state-of-the-art multi-agent systems — a whole failure class is mishandled state transitions & verification.</div><div class="src">Berkeley · NeurIPS 2025</div></div>
+        <div class="stat"><div class="v">72% / 15%</div><div class="k">of orgs run agents with uncontrolled financial & compliance risk; only 15% let them touch money.</div><div class="src">Kore.ai · 2026</div></div>
+      </div>
+      <p class="sol"><b>Kaspa Mission Control</b> puts coordination on-chain. Agents interact only by publishing <b>commitments</b> to a shared, programmable Mission Ledger — coordination, shared budget, state transitions, settlement, audit. <span class="no">Not a payment rail — a programmable registry of agent interactions.</span></p>
+    </div></div></section>
+
+    <section class="scene" data-scene="1"><div class="scene-inner">
+      <h2 class="sc-h">Choose a mission</h2>
+      <p class="sc-sub">A mission carries an objective, a budget and rules. Pick one — the orchestrator takes it from there. The core is generic; security is one example.</p>
+      <div class="missions" id="missions"></div>
+    </div></section>
+
+    <section class="scene" data-scene="2"><div class="scene-inner">
+      <h2 class="sc-h">The orchestrator builds the team</h2>
+      <p class="sc-sub">From a bank of specialist roles it selects who <i>this</i> mission needs, then picks the cheapest capable model and allocates budget to each.</p>
+      <div class="orch">
+        <div class="left">
+          <div class="think"><span class="brain">◆</span><span class="txt" id="orchThink">Analyzing…</span></div>
+          <div class="rolebank" id="rolebank"></div>
+          <div class="rejnote" id="rejnote"></div>
+          <div class="team" id="team"></div>
+        </div>
+        <div class="rpanel">
+          <div class="label">Budget allocation</div>
+          <div class="big"><span id="allocDone">0.0</span><small> / <span id="allocTotal">12</span> KAS</small></div>
+          <div class="alloc-track" id="allocTrack"></div>
+          <div class="alloc-legend">
+            <div class="l"><span><span class="sw" style="background:var(--kaspa)"></span>Allocated to tasks</span><span class="num" id="allocSum">0.0 KAS</span></div>
+            <div class="l"><span><span class="sw" style="background:#b6c6c4"></span>Reserve (unallocated)</span><span class="num" id="reserveSum">—</span></div>
+          </div>
+          <div class="costnote" id="costnote">Cost-aware: enough to finish, a margin kept for a surprise — <b>neither over- nor under-funded</b>.</div>
+        </div>
+      </div>
+    </div></section>
+
+    <section class="scene" data-scene="3"><div class="scene-inner">
+      <h2 class="sc-h">The team executes — every step on-chain</h2>
+      <p class="sc-sub">Workers run stage by stage; independent tasks run <b>in parallel</b>. Each claims, reserves budget, works, publishes a proof and hands off — cost staying inside its envelope.</p>
+      <div class="stagebar" id="stagebar"></div>
+      <div class="lane" id="lane"></div>
+    </div></section>
+
+    <section class="scene" data-scene="4"><div class="scene-inner">
+      <h2 class="sc-h">Mission output & cost audit</h2>
+      <p class="sc-sub">A polished deliverable — and every claim, every KAS and every decision is a clickable Kaspa transaction.</p>
+      <div class="report">
+        <div class="paperwrap"><div class="paper" id="paper"></div></div>
+        <div class="rside">
+          <div class="dlrow">
+            <button class="btn pdf" id="dlPdf">↧ Download PDF</button>
+            <button class="btn ghost" id="dlMd">↧ report.md</button>
+          </div>
+          <div class="auditcard" id="auditcard"></div>
+          <div class="txlist">
+            <div class="th"><span class="label" style="color:var(--kaspa-ink)">Mission Ledger</span><span class="label" id="txCountLbl">0 tx</span></div>
+            <div class="tl" id="txlist"></div>
+          </div>
+        </div>
+      </div>
+    </div></section>
+
+    <section class="scene" data-scene="5"><div class="scene-inner">
+      <h2 class="sc-h">An agent marketplace — teams register &amp; get recruited</h2>
+      <p class="sc-sub">Teams of orchestrators + workers <b>register their capabilities</b> and are <b>recruited per mission</b>, in any domain. The same governed-autonomy layer applies — and the on-chain track record makes it a <b>trustless marketplace</b>. Security was just one example.</p>
+      <div class="mkt">
+        <div class="mkt-col demand">
+          <div class="ch"><span class="h">Missions · demand</span><span class="sub">any domain</span></div>
+          <div class="dem-card ex reveal" data-r="1"><span class="dom">Security audit <span class="tagx">this demo</span></span><span class="bud">12 KAS</span></div>
+          <div class="dem-card reveal" data-r="2"><span class="dom">Data pipeline QA</span><span class="bud">8 KAS</span></div>
+          <div class="dem-card reveal" data-r="3"><span class="dom">Market research synthesis</span><span class="bud">6 KAS</span></div>
+          <div class="dem-card reveal" data-r="4"><span class="dom">DevOps · incident response</span><span class="bud">15 KAS</span></div>
+          <div class="dem-card reveal" data-r="5"><span class="dom">Financial reconciliation</span><span class="bud">10 KAS</span></div>
+        </div>
+        <div class="mkt-hub reveal" data-r="0">
+          <div class="hk">The Kaspa layer</div>
+          <div class="ht">Mission Ledger</div>
+          <div class="hs">domain-agnostic governance</div>
+          <div class="hchips"><span>commitments</span><span>shared budget</span><span>human gates</span><span>settlement</span><span>on-chain reputation</span></div>
+          <div class="flowlbl"><span>posts mission</span><span>recruits team</span></div>
+        </div>
+        <div class="mkt-col supply">
+          <div class="ch"><span class="h">Agent teams · supply</span><span class="sub">registered</span></div>
+          <div class="team-card reveal" data-r="1"><div class="tt"><b>RedTeam Labs</b><span class="rep">★ 4.8</span></div><div class="tags">orchestrator · recon · scanner · exploit · report</div><div class="meta"><span>venice · qwen</span><span class="oc">128 missions on-chain</span></div></div>
+          <div class="team-card reveal" data-r="2"><div class="tt"><b>DataForge</b><span class="rep">★ 4.6</span></div><div class="tags">ingest · validate · dedupe · report</div><div class="meta"><span>llama · gpt-oss</span><span class="oc">340 missions on-chain</span></div></div>
+          <div class="team-card reveal" data-r="3"><div class="tt"><b>ResearchOps</b><span class="rep">★ 4.9</span></div><div class="tags">search · read · synthesize · cite</div><div class="meta"><span>llama-70b</span><span class="oc">92 missions on-chain</span></div></div>
+          <div class="team-card reveal" data-r="4"><div class="tt"><b>SRE Sentinels</b><span class="rep">★ 4.7</span></div><div class="tags">triage · diagnose · remediate · postmortem</div><div class="meta"><span>venice · qwen</span><span class="oc">210 missions on-chain</span></div></div>
+        </div>
+      </div>
+
+      <div class="insight reveal" data-r="6"><span class="ib">◆</span><div>Because every commitment is on-chain, a team's reputation is <b>verifiable, not self-reported</b> — completed missions, budgets respected, human-approval rate. That provable track record is what makes a <b>trustless agent marketplace</b> possible.</div></div>
+
+      <div class="mkt-cycle reveal" data-r="7">
+        <span class="cst"><b>1</b> post mission + budget</span><span class="car">→</span>
+        <span class="cst"><b>2</b> orchestrator recruits a team</span><span class="car">→</span>
+        <span class="cst"><b>3</b> govern (budget · gates)</span><span class="car">→</span>
+        <span class="cst"><b>4</b> settle · pay agents</span><span class="car">→</span>
+        <span class="cst"><b>5</b> reputation ++ <b>on-chain</b></span>
+      </div>
+
+      <div class="mkt-foot reveal" data-r="8">
+        <span class="pill">Multi-agent system</span>
+        <span class="pill">Developer infrastructure</span>
+        <span class="pill">Coordinating agent platform</span>
+        <button class="btn primary" id="registerBtn">Register a team ▸</button>
+      </div>
+    </div></section>
+  </div>
+
+  <div class="nav">
+    <button class="btn ghost" id="backBtn">◀ Back</button>
+    <button class="btn primary" id="nextBtn">▶ Start demo</button>
+    <button class="btn ghost" id="pauseBtn" style="display:none">⏸ Pause</button>
+    <span class="hint" id="navHint"></span>
+    <div class="sp"></div>
+    <div class="spd"><span class="label" style="margin-right:6px">Speed</span>
+      <button data-spd="0.7">0.7×</button><button data-spd="1" class="on">1×</button><button data-spd="1.8">1.8×</button></div>
+  </div>
+</div>
+
+<div class="scrim" id="txScrim"><div class="modal">
+  <div class="mh"><span class="ty" id="txmType">COMMITMENT</span><span class="cf">confirmed on-chain</span></div>
+  <div class="kv">
+    <span class="k">Txid</span><span class="v" id="txmId"></span>
+    <span class="k">Type</span><span class="v" id="txmT2"></span>
+    <span class="k">Actor</span><span class="v" id="txmActor"></span>
+    <span class="k">Budget Δ</span><span class="v" id="txmDelta"></span>
+    <span class="k">Rationale</span><span class="v" id="txmRat" style="font-family:var(--sans)"></span>
+  </div>
+  <div class="mfoot"><button class="btn ghost" id="txmClose">Close</button><a class="btn" id="txmExplorer" target="_blank" rel="noopener">View on kas.fyi ↗</a></div>
+</div></div>
+
+<script>
+(() => {
+  "use strict";
+  const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+  const reduced=matchMedia("(prefers-reduced-motion:reduce)").matches;
+  const EXPLORER="https://kas.fyi/transaction/";
+  let speed=1, scene=0, token=0, autoplay=false, paused=false, advTimer=null;
+
+  const STEP_LABELS=["Problem","Mission","Orchestrator","Execution","Report","Marketplace"];
+  const stepsEl=$("#steps");
+  STEP_LABELS.forEach((l,i)=>{ if(i) stepsEl.insertAdjacentHTML("beforeend",'<span class="sep"></span>');
+    stepsEl.insertAdjacentHTML("beforeend",`<span class="s" data-i="${i}"><span class="n">${i+1}</span>${l}</span>`); });
+
+  const LABELS={"recon-osint":"recon / osint","attack-surface":"attack-surface mapper","web-scanner":"web-app scanner",
+    "network-scanner":"network scanner","auth-tester":"auth tester","injection":"injection specialist",
+    "exploit-validator":"exploit validator","secrets-hunter":"secrets hunter","privesc":"privilege escalation",
+    "compliance":"compliance checker","report-writer":"report writer"};
+  const BANK=Object.keys(LABELS);
+  const ICON={"attack-surface":'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    "recon-osint":'<circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/>',
+    "web-scanner":'<path d="M12 3v4M12 17v4M3 12h4M17 12h4"/><circle cx="12" cy="12" r="4"/>',
+    "network-scanner":'<circle cx="5" cy="6" r="2"/><circle cx="5" cy="18" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 6h6M7 18h6M13 6l4 5M13 18l4-5"/>',
+    "injection":'<path d="M4 7h16M4 12h16M4 17h10"/>',"auth-tester":'<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/>',
+    "secrets-hunter":'<circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M17 4h3v3"/>',
+    "exploit-validator":'<path d="M9 12l2 2 4-4"/><path d="M12 3l7 3v6c0 4-3 7-7 9-4-2-7-5-7-9V6z"/>',
+    "compliance":'<path d="M9 11l2 2 4-4"/><rect x="4" y="4" width="16" height="16" rx="2"/>',
+    "report-writer":'<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 13h6M10 17h6"/>'};
+
+  // ---------- missions (roles differ per mission; specialist randomized) ----------
+  const rnd=a=>a[Math.floor(Math.random()*a.length)];
+  const MISSIONS={
+    web:{ title:"Web application pentest", target:"juice-shop.internal.staging", budget:12, reserve:2,
+      reportTitle:"Security Audit — Juice Shop (staging)",
+      base:[
+        {key:"attack-surface",model:"llama-3.1-8b",tier:"$",budget:2,act:"Mapping endpoints, tech & entry points (passive)."},
+        {key:"web-scanner",model:"venice-uncensored",tier:"$$",budget:3,act:"Scanning entry points; triaging by severity."},
+        {key:"__spec__"},
+        {key:"exploit-validator",model:"venice-uncensored",tier:"$$",budget:2,act:"Validating exploitability — active_exploit gated.",gate:true},
+        {key:"report-writer",model:"llama-3.3-70b",tier:"$$$",budget:1,act:"Compiling the audit report from on-chain proofs."},
+      ],
+      specialists:[
+        {key:"injection",model:"qwen-2.5-coder",tier:"$$",budget:2,act:"Crafting non-destructive PoC payloads."},
+        {key:"auth-tester",model:"venice-uncensored",tier:"$$",budget:2,act:"Testing auth flows, JWT & sessions."},
+        {key:"secrets-hunter",model:"venice-uncensored",tier:"$$",budget:2,act:"Hunting exposed secrets in responses & /ftp."},
+      ],
+      stages:[[0],[1,2],[3],[4]],
+      reject:{"network-scanner":"no network range in scope","privesc":"no host/shell access","compliance":"technical audit, not compliance","recon-osint":"internal staging — little OSINT value"},
+      findings:[["crit","SQL injection via product search — validated exploitable","A03 · /rest/products/search"],
+        ["crit","Sensitive files exposed under /ftp","A05 · /ftp"],
+        ["high","Broken auth — JWT 'none' algorithm accepted","A07 · /rest/user/login"],
+        ["high","IDOR on basket items","A01 · /api/BasketItems/{id}"],
+        ["med","Stored XSS in feedback comment","A03 · /api/Feedbacks"]],
+      sev:{crit:2,high:3,med:7,low:11} },
+    net:{ title:"Internal network audit", target:"10.0.0.0/24", budget:20, reserve:4,
+      reportTitle:"Network Security Audit — 10.0.0.0/24",
+      base:[
+        {key:"recon-osint",model:"llama-3.1-8b",tier:"$",budget:2,act:"Passive host & service discovery."},
+        {key:"network-scanner",model:"venice-uncensored",tier:"$$",budget:5,act:"Port/service sweep across the /24."},
+        {key:"exploit-validator",model:"venice-uncensored",tier:"$$",budget:4,act:"Validating exposed services — gated.",gate:true},
+        {key:"report-writer",model:"llama-3.3-70b",tier:"$$$",budget:2,act:"Compiling the network audit report."},
+      ],
+      stages:[[0,1],[2],[3]],
+      reject:{"web-scanner":"no web app in this mission's scope","injection":"not a web-injection audit","secrets-hunter":"no filesystem access","compliance":"technical scope","auth-tester":"folded into validator","attack-surface":"replaced by network-scanner"},
+      findings:[["crit","Open Redis with no authentication","10.0.0.17:6379"],
+        ["high","SMB signing disabled — relay risk","10.0.0.0/24"],
+        ["high","Outdated OpenSSH (CVE-2024-6387)","10.0.0.9:22"],
+        ["med","Weak SNMP community string 'public'","10.0.0.4"]],
+      sev:{crit:1,high:4,med:6,low:9} },
+    cloud:{ title:"Cloud IAM & config review", target:"aws-staging", budget:15, reserve:3,
+      reportTitle:"Cloud Configuration Review — aws-staging",
+      base:[
+        {key:"attack-surface",model:"llama-3.1-8b",tier:"$",budget:2,act:"Enumerating public surface & exposed endpoints."},
+        {key:"secrets-hunter",model:"venice-uncensored",tier:"$$",budget:3,act:"Scanning for exposed keys & buckets."},
+        {key:"compliance",model:"llama-3.3-70b",tier:"$$",budget:4,act:"Checking IAM, MFA & encryption baselines."},
+        {key:"report-writer",model:"llama-3.3-70b",tier:"$$$",budget:3,act:"Compiling the cloud review report."},
+      ],
+      stages:[[0,1],[2],[3]],
+      reject:{"web-scanner":"no single web app target","injection":"not a web-injection audit","network-scanner":"managed network, out of scope","exploit-validator":"passive config review — no exploitation","privesc":"no shell access","auth-tester":"covered by compliance","recon-osint":"cloud console, minimal OSINT"},
+      findings:[["crit","Public S3 bucket with customer exports","s3://staging-exports"],
+        ["high","Over-privileged IAM role (AdministratorAccess)","role/ci-deployer"],
+        ["high","No MFA on root account","account root"],
+        ["med","Unencrypted RDS snapshot shared","rds:staging-db"]],
+      sev:{crit:1,high:3,med:5,low:7} } };
+
+  // build resolved plan for a mission (specialist randomized for web)
+  function buildPlan(id){
+    const M=MISSIONS[id]; const team=M.base.map(x=>({...x}));
+    if(id==="web"){ const spec=rnd(M.specialists); team[2]={...spec}; }
+    team.forEach(t=>t.label=LABELS[t.key]);
+    return {id, ...M, team, chosen:new Set(team.map(t=>t.key))};
+  }
+  let PLAN=null, selMission="web";
+
+  // ---------- budget widget + ledger ----------
+  let S={remaining:0,spent:0,tx:0,human:0,actions:0,total:0};
+  function initBudget(total){ S={remaining:total,spent:0,tx:0,human:0,actions:0,total}; $("#bwTotal").textContent=total; renderBW(); }
+  function renderBW(){
+    $("#bwLeft").textContent=S.remaining.toFixed(1);
+    const pct=S.total?Math.max(0,S.remaining/S.total*100):100; $("#bwFill").style.width=pct+"%";
+    $("#bwg").classList.toggle("low",pct<=45&&pct>20); $("#bwg").classList.toggle("crit",pct<=20);
+    $("#bwTx").textContent=S.tx; $("#bwHuman").textContent=S.actions?Math.round(S.human/S.actions*100):0;
+  }
+  const hex=n=>Array.from({length:n},()=>"0123456789abcdef"[Math.floor(Math.random()*16)]).join("");
+  const sleep=ms=>new Promise(r=>setTimeout(r,reduced?Math.min(ms,45):ms/speed));
+  const LEDGER=[];
+  function record(type,actor,delta,rationale){
+    S.actions++;S.tx++; if(actor==="user:sam")S.human++;
+    if(delta<0){S.remaining+=delta;S.spent-=delta;}
+    const m={seq:LEDGER.length,type,actor,delta,rationale,txid:"kaspatest:"+hex(10)+"…",full:hex(64)};
+    LEDGER.push(m); renderBW(); return m;
+  }
+
+  // ---------- scenes ----------
+  const scenes=$$(".scene");
+  function paintSteps(){ $$("#steps .s").forEach(s=>{const i=+s.dataset.i; s.classList.toggle("active",i===scene); s.classList.toggle("done",i<scene);}); }
+  function showScene(n){
+    clearTimeout(advTimer);
+    token++; const tk=token; scene=n;
+    scenes.forEach(s=>s.classList.toggle("active",+s.dataset.scene===n));
+    paintSteps();
+    $("#steps").style.display = n>=5 ? "none" : "";        // hide mission steps on marketplace
+    $("#bw").classList.toggle("show", n>=2 && n<5);
+    $("#backBtn").disabled=n===0;
+    $("#nextBtn").textContent = n===0?"▶ Start demo" : n>=scenes.length-1?"↻ Replay" : "Skip ▸";
+    $("#pauseBtn").style.display = (n>0 && n<scenes.length-1) ? "" : "none";
+    $("#navHint").textContent="";
+    if(n===1) enterMission();
+    if(n===2){ PLAN=buildPlan(selMission); enterOrchestrator(tk); }
+    if(n===3) enterWorkers(tk);
+    if(n===4) enterReport();
+    if(n===5){ enterMarketplace(tk); autoplay=false; }
+    if(autoplay && !paused){                                // static scenes auto-advance
+      if(n===1) scheduleAdvance(tk, 3000);
+      if(n===4) scheduleAdvance(tk, 6500);
+    }
+  }
+  function scheduleAdvance(tk, ms){
+    clearTimeout(advTimer);
+    advTimer=setTimeout(()=>{ if(autoplay && !paused && tk===token && scene<scenes.length-1) showScene(scene+1); }, (reduced?400:ms)/speed);
+  }
+
+  async function enterMarketplace(tk){
+    const alive=()=>tk===token;
+    const els=$$('#stage [data-scene="5"] .reveal');
+    els.forEach(e=>e.classList.remove("in"));
+    // reveal order: hub (r=0), then demand+supply rows 1..5, then insight/cycle/foot 6..8
+    const order=[["0"],["1"],["2"],["3"],["4"],["5"],["6"],["7"],["8"]];
+    for(const grp of order){
+      grp.forEach(r=>$$(`#stage [data-scene="5"] .reveal[data-r="${r}"]`).forEach(e=>e.classList.add("in")));
+      await sleep(reduced?30:300); if(!alive())return;
+    }
+    $("#navHint").textContent="Register orchestrator/worker teams → a governed, on-chain agent marketplace.";
+  }
+  $("#registerBtn").onclick=()=>$("#navHint").textContent="Team registration → publishes capabilities + price on the Mission Ledger (coming next).";
+
+  const MCARDS=[
+    {id:"web",badge:"security · web",title:"Web application pentest",target:"juice-shop.internal.staging",budget:"12 KAS",obj:"Map · scan · validate · report"},
+    {id:"net",badge:"security · network",title:"Internal network audit",target:"10.0.0.0/24",budget:"20 KAS",obj:"Discover · scan · validate"},
+    {id:"cloud",badge:"security · cloud",title:"Cloud IAM & config review",target:"aws-staging",budget:"15 KAS",obj:"Enumerate · secrets · compliance"},
+  ];
+  function enterMission(){
+    const c=$("#missions"); c.innerHTML="";
+    MCARDS.forEach(m=>{ const el=document.createElement("div"); el.className="mcard"+(m.id===selMission?" sel":""); el.dataset.id=m.id;
+      el.innerHTML=`<span class="check">◆ selected</span><span class="badge">${m.badge}</span><h3>${m.title}</h3>
+        <div class="row"><span>Target</span><b>${m.target}</b></div><div class="row"><span>Budget</span><b>${m.budget}</b></div><div class="row"><span>Objective</span><b>${m.obj}</b></div>`;
+      el.onclick=()=>{ selMission=m.id; $$("#missions .mcard").forEach(x=>x.classList.remove("sel")); el.classList.add("sel"); $("#navHint").textContent=m.title+" selected — press Next."; };
+      c.appendChild(el); });
+    $("#navHint").textContent="Pick a mission — different missions build different teams.";
+  }
+
+  async function enterOrchestrator(tk){
+    initBudget(PLAN.budget); LEDGER.length=0;
+    $("#allocTotal").textContent=PLAN.budget; $("#allocDone").textContent="0.0"; $("#allocSum").textContent="0.0 KAS";
+    $("#reserveSum").textContent=PLAN.budget.toFixed(1)+" KAS"; $("#allocTrack").innerHTML=""; $("#team").innerHTML=""; $("#rejnote").textContent="";
+    const bank=$("#rolebank"); bank.innerHTML="";
+    BANK.forEach(k=>{ const el=document.createElement("span"); el.className="role"; el.dataset.k=k; el.textContent=LABELS[k]; bank.appendChild(el); });
+    const alive=()=>tk===token;
+
+    $("#orchThink").innerHTML="Reading objective, target & scope…"; await sleep(850); if(!alive())return;
+    $("#orchThink").innerHTML="Selecting the roles this mission needs…"; await sleep(500);
+    for(const t of PLAN.team){ const el=bank.querySelector(`[data-k="${t.key}"]`); if(el){el.classList.add("picked");} await sleep(reduced?30:340); if(!alive())return; }
+    await sleep(250);
+    $("#orchThink").innerHTML="Ruling out roles that don't fit the scope…";
+    for(const k of Object.keys(PLAN.reject)){ const el=bank.querySelector(`[data-k="${k}"]`); if(el){el.classList.add("rejected");el.title=PLAN.reject[k];} await sleep(reduced?15:150); if(!alive())return; }
+    const rj=Object.entries(PLAN.reject).slice(0,3).map(([k,v])=>`${LABELS[k]} (${v})`).join(" · ");
+    $("#rejnote").innerHTML="<b>Rejected:</b> "+rj; await sleep(650); if(!alive())return;
+
+    $("#orchThink").innerHTML="For each role: cheapest capable <b>model</b> + a <b>budget</b> envelope.";
+    const track=$("#allocTrack"); let alloc=0, idx=0;
+    for(const t of PLAN.team){ idx++;
+      const row=document.createElement("div"); row.className="trow";
+      row.innerHTML=`<span class="r">${t.label}</span><span class="m">${t.model} <span class="tier">${t.tier}</span></span><span class="b">${t.budget.toFixed(1)} KAS</span>`;
+      $("#team").appendChild(row); requestAnimationFrame(()=>row.classList.add("in"));
+      await sleep(reduced?40:400); if(!alive())return;
+      row.querySelector(".m").classList.add("in"); await sleep(reduced?30:320); if(!alive())return;
+      row.querySelector(".b").classList.add("in");
+      const seg=document.createElement("span"); seg.className="seg"; seg.style.background="var(--kaspa)"; seg.style.opacity=String(0.5+0.1*idx);
+      track.appendChild(seg); alloc+=t.budget; requestAnimationFrame(()=>seg.style.width=(t.budget/PLAN.budget*100)+"%");
+      $("#allocDone").textContent=alloc.toFixed(1); $("#allocSum").textContent=alloc.toFixed(1)+" KAS"; $("#reserveSum").textContent=(PLAN.budget-alloc).toFixed(1)+" KAS";
+      await sleep(reduced?40:340); if(!alive())return;
+    }
+    const rseg=document.createElement("span"); rseg.className="seg"; rseg.style.background="#b6c6c4"; track.appendChild(rseg);
+    requestAnimationFrame(()=>rseg.style.width=((PLAN.budget-alloc)/PLAN.budget*100)+"%");
+    $("#orchThink").innerHTML=`Plan ready — <b>${alloc.toFixed(0)} KAS allocated, ${(PLAN.budget-alloc).toFixed(0)} KAS reserve</b>. Cost-aware, on-chain.`;
+    record("STEP_DONE","agent:planner",0,`Plan ready: ${PLAN.team.length} roles, models & budgets assigned.`);
+    record("HANDOFF","agent:planner",0,"Hand off to the team.");
+    $("#navHint").textContent="Team & budget assigned.";
+    if(autoplay&&!paused) scheduleAdvance(tk,1600);
+  }
+
+  // ---------- execution (parallel stages) ----------
+  function stageBar(active){
+    const b=$("#stagebar"); b.innerHTML="";
+    PLAN.stages.forEach((st,i)=>{ if(i) b.insertAdjacentHTML("beforeend",'<span class="stagesep">→</span>');
+      const names=st.map(ix=>PLAN.team[ix].label).join(" + ");
+      const cls=i<active?"done":i===active?"active":""; const par=st.length>1?" par":"";
+      b.insertAdjacentHTML("beforeend",`<span class="stagechip ${cls}${par}">${names}</span>`); });
+  }
+  function workerCard(t){
+    const el=document.createElement("div"); el.className="wcard"; el.dataset.k=t.key;
+    el.innerHTML=`<div class="wh"><div class="ic"><svg viewBox="0 0 24 24">${ICON[t.key]||""}</svg></div>
+      <div class="role">${t.label}</div><div class="model">${t.model} ${t.tier}</div></div>
+      <div class="act"><span class="cur">▸</span> ${t.act}</div>
+      <div class="cbar"><div class="top"><span>cost</span><span><span class="u">0.0</span><span class="cap">/${t.budget.toFixed(1)} KAS</span></span></div>
+        <div class="tr"><i></i></div><div class="vd">running</div></div>
+      <div class="wcommits"></div>`;
+    return el;
+  }
+  function wcommit(cardEl,type,actor,delta){
+    const m=record(type,actor,delta,type+" by "+actor);
+    const el=document.createElement("div"); el.className="wc"; el.onclick=()=>openTx(m);
+    el.innerHTML=`<span class="ty">${type}</span><span class="dl ${delta<0?"":"zero"}">${delta<0?delta.toFixed(1):"0"} KAS</span><span class="cf p">pending</span>`;
+    const box=cardEl.querySelector(".wcommits"); box.insertBefore(el,box.firstChild);
+    setTimeout(()=>{ el.classList.add("confirmed"); el.querySelector(".cf").className="cf c"; el.querySelector(".cf").textContent="confirmed"; },reduced?10:600/speed);
+    return m;
+  }
+  async function runWorker(t,cardEl,alive){
+    const use=t.budget*(0.82+Math.random()*0.12); // used slightly under alloc
+    wcommit(cardEl,"CLAIM_TASK","agent:"+t.key,0); await sleep(600); if(!alive())return;
+    wcommit(cardEl,"RESERVE_BUDGET","agent:"+t.key,-t.budget); await sleep(700); if(!alive())return;
+    cardEl.querySelector(".cbar .tr i").style.width=Math.min(100,use/t.budget*100)+"%";
+    cardEl.querySelector(".cbar .u").textContent=use.toFixed(1);
+    cardEl.querySelector(".cbar .vd").textContent = use>=t.budget*0.9?"tight":"efficient";
+    await sleep(700); if(!alive())return;
+    if(t.gate){
+      cardEl.querySelector(".act").innerHTML=`<span class="cur" style="color:var(--warn)">⏸</span> High-impact — approval requested…`;
+      wcommit(cardEl,"REQUEST_BUDGET","agent:"+t.key,0); await sleep(700); if(!alive())return;
+      wcommit(cardEl,"APPROVAL","user:sam",0);
+      cardEl.querySelector(".act").innerHTML=`<span class="cur">✓</span> Approved by Sam (on-chain) — validating.`;
+      await sleep(400); if(!alive())return;
+    }
+    wcommit(cardEl,"PUBLISH_PROOF","agent:"+t.key,0); await sleep(560); if(!alive())return;
+    wcommit(cardEl,"HANDOFF","agent:"+t.key,0);
+    cardEl.querySelector(".wh .role").insertAdjacentHTML("beforeend"," ✓");
+  }
+  let tk_current=0;
+  async function enterWorkers(tk){
+    tk_current=tk; const alive=()=>tk===token;
+    const lane=$("#lane");
+    initBudgetKeep(); // keep budget from orchestrator (already reserved 0 so far)
+    for(let si=0; si<PLAN.stages.length; si++){
+      const st=PLAN.stages[si]; stageBar(si);
+      lane.classList.toggle("par", st.length>1); lane.innerHTML="";
+      const cards=st.map(ix=>{ const c=workerCard(PLAN.team[ix]); lane.appendChild(c); return {t:PLAN.team[ix],c}; });
+      try{ await Promise.all(cards.map(({t,c})=>runWorker(t,c,alive))); }
+      catch(e){ if(e==="denied"){ $("#navHint").textContent="Denied path — mission halts (deterministic)."; return; } }
+      if(!alive())return; await sleep(450);
+    }
+    stageBar(PLAN.stages.length);
+    record("SETTLE","user:sam",0,`Payouts + ${PLAN.reserve} KAS refund · mission completed.`);
+    $("#navHint").textContent=`All stages done · ${PLAN.reserve} KAS refunded.`;
+    if(autoplay&&!paused) scheduleAdvance(tk,1800);
+  }
+  function initBudgetKeep(){ /* budget carried from orchestrator scene */ }
+
+  // ---------- report (PDF-style) ----------
+  function enterReport(){
+    const M=PLAN, sv=M.sev, spent=M.budget-M.reserve;
+    const maxSev=Math.max(sv.crit,sv.high,sv.med,sv.low,1);
+    const bar=(n,c)=>`<div class="sb"><div class="n">${n}</div><div class="bar" style="height:${18+n/maxSev*52}px;background:${c}"></div><div class="lb" style="color:${c}">${''}</div></div>`;
+    const rows=M.findings.map((f,i)=>`<tr><td><span class="sev sev-${f[0]}">${f[0]}</span></td><td>${f[1]}<div style="font-family:var(--mono);font-size:10px;color:#33413e;margin-top:2px">${f[2]}</div></td><td><span class="pf" data-fi="${i}">proof ↗</span></td></tr>`).join("");
+    $("#paper").innerHTML=`
+      <div class="pcover"><div class="pk">Confidential · authorized engagement</div>
+        <h1>${M.reportTitle}</h1>
+        <div class="pmeta"><span>Target <b>${M.target}</b></span><span>Budget <b>${M.budget} KAS</b></span><span>Findings <b>${sv.crit+sv.high+sv.med+sv.low}</b></span><span>Anchored on <b>Kaspa testnet-10</b></span></div></div>
+      <h2>Executive summary</h2>
+      <p>An authorized, agent-driven audit of <b>${M.target}</b> identified <b>${sv.crit} critical</b> and <b>${sv.high} high</b> severity issues. Every step of the engagement — task claims, budget reservations, proofs and the human authorization for active testing — was published as an immutable commitment on the Kaspa Mission Ledger, giving a complete, tamper-evident audit trail.</p>
+      <h2>Severity distribution</h2>
+      <div class="sevchart">${bar(sv.crit,'var(--crit)')}${bar(sv.high,'var(--danger)')}${bar(sv.med,'var(--warn)')}${bar(sv.low,'var(--ok)')}</div>
+      <div style="display:flex;gap:14px;font-family:var(--mono);font-size:10px;color:#33413e;margin-bottom:4px"><span>■ crit</span><span>■ high</span><span>■ med</span><span>■ low</span></div>
+      <h2>Key findings</h2>
+      <table class="ftable"><thead><tr><th>Sev</th><th>Finding</th><th>Proof</th></tr></thead><tbody>${rows}</tbody></table>
+      <h2>Governance & cost</h2>
+      <p>Budget <b>${M.budget} KAS</b>, of which <b>${spent} KAS</b> was reserved across the fleet and <b>${M.reserve} KAS</b> refunded at settlement. Total Kaspa fees were negligible. The operator authorized <b>1 high-impact action</b>; all other decisions were autonomous and governed by policy.</p>
+      <div class="pfoot"><span>Kaspa Mission Control · governed autonomy</span><span class="teal">every claim cites an on-chain txid</span></div>`;
+    $$("#paper .pf").forEach(el=>el.onclick=()=>openTx(LEDGER.find(m=>m.type==="PUBLISH_PROOF")||LEDGER[0]));
+
+    $("#auditcard").innerHTML=`<h4>Cost audit</h4>
+      <div class="auditrow"><span>Budget</span><b>${M.budget}.0 KAS</b></div>
+      <div class="auditrow"><span>Reserved (spent)</span><b>${spent}.0 KAS</b></div>
+      <div class="auditrow"><span>Refunded at settle</span><b class="teal">${M.reserve}.0 KAS</b></div>
+      <div class="auditrow"><span>Kaspa txs</span><b>${LEDGER.length}</b></div>
+      <div class="auditrow"><span>Human decisions</span><b>${S.human} / ${S.actions}</b></div>`;
+
+    const tl=$("#txlist"); tl.innerHTML=""; $("#txCountLbl").textContent=LEDGER.length+" tx";
+    LEDGER.forEach(m=>{ const el=document.createElement("div"); el.className="txitem"; el.onclick=()=>openTx(m);
+      el.innerHTML=`<span class="ty">${m.type}</span><span class="id">${m.txid}</span><span style="color:var(--muted)">#${m.seq}</span>`; tl.appendChild(el); });
+    $("#navHint").textContent="Nice PDF + clickable on-chain proofs.";
+  }
+  $("#dlPdf").onclick=()=>{ const w=window.open("","_blank"); if(!w){ alert("Allow pop-ups to export the PDF (print dialog)."); return; }
+    w.document.write(`<html><head><title>${PLAN.reportTitle}</title><style>body{font-family:Georgia,serif;padding:40px;color:#111}h1{font-size:22px}h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:#075246;border-bottom:1px solid #ddd;padding-bottom:4px}</style></head><body>${$("#paper").innerHTML}</body></html>`);
+    w.document.close(); setTimeout(()=>w.print(),300); };
+  $("#dlMd").onclick=()=>$("#navHint").textContent="report.md exported (demo).";
+
+  // tx modal
+  function openTx(m){ if(!m)return;
+    $("#txmType").textContent=m.type;$("#txmT2").textContent=m.type;$("#txmActor").textContent=m.actor;
+    $("#txmDelta").textContent=(m.delta<0?m.delta.toFixed(1):"0")+" KAS";$("#txmRat").textContent=m.rationale;
+    $("#txmId").textContent=m.txid;$("#txmExplorer").href=EXPLORER+m.full; $("#txScrim").classList.add("show"); }
+  $("#txmClose").onclick=()=>$("#txScrim").classList.remove("show");
+  $("#txScrim").onclick=e=>{ if(e.target===$("#txScrim"))$("#txScrim").classList.remove("show"); };
+
+  // nav — auto-play by default (one click to start), Pause to dwell, Skip/Back for manual control
+  $("#nextBtn").onclick=()=>{
+    if(scene===0){ autoplay=true; paused=false; showScene(1); return; }
+    if(scene>=scenes.length-1){ autoplay=false; showScene(0); return; }
+    showScene(scene+1);
+  };
+  $("#backBtn").onclick=()=>{ autoplay=false; clearTimeout(advTimer); if(scene>0) showScene(scene-1); };
+  $("#pauseBtn").onclick=()=>{ paused=!paused; $("#pauseBtn").textContent=paused?"▶ Resume":"⏸ Pause";
+    if(paused) clearTimeout(advTimer);
+    else { if(scene===1) scheduleAdvance(token,1800); if(scene===4) scheduleAdvance(token,3000); } };
+  $$(".spd button").forEach(b=>b.onclick=()=>{ speed=parseFloat(b.dataset.spd); $$(".spd button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); });
+
+  showScene(0);
+})();
+</script>
