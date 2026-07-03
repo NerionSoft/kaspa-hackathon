@@ -12,7 +12,7 @@ import {
 } from "./build";
 import { MissionNotFoundError } from "./errors";
 import { encodeEnvelope } from "./protocol";
-import type { EscrowLock } from "./escrow/types";
+import type { EscrowInfo, EscrowLock, EscrowRelease } from "./escrow/types";
 import { CommitmentInput, MissionSpec, SettlementPlan } from "./types";
 import type {
   BudgetView,
@@ -39,6 +39,9 @@ import type { LedgerIndex } from "./store/ledger-index";
  */
 export abstract class BaseLedger implements MissionLedger {
   abstract readonly backend: "kaspa" | "mock";
+
+  /** Escrow lock per mission, captured at creation so settlement can release it. */
+  protected readonly escrowLocks = new Map<string, EscrowLock>();
 
   protected constructor(protected readonly index: LedgerIndex) {}
 
@@ -68,6 +71,7 @@ export abstract class BaseLedger implements MissionLedger {
     const { txid } = await this.publishPayload(encodeEnvelope(genesis));
     const missionId = txid;
     const escrow = await this.lockBudget(missionId, parsed.budgetKas);
+    this.escrowLocks.set(missionId, escrow);
 
     const mission = missionFromGenesis({
       txid,
@@ -120,6 +124,24 @@ export abstract class BaseLedger implements MissionLedger {
     return { ...mission, spentKas: budget.spentKas, status: deriveMissionStatus(commitments) };
   }
 
+  async getEscrow(missionId: string): Promise<EscrowInfo | null> {
+    const mission = await this.index.getMission(missionId);
+    if (!mission) return null;
+    const lock = this.escrowLocks.get(missionId);
+    const commitments = await this.index.getCommitments(missionId);
+    const settle = commitments.find((c) => c.type === "SETTLE");
+    const releaseTxid =
+      (settle?.payload as { b?: { escrowReleaseTxid?: string | null } })?.b?.escrowReleaseTxid ?? null;
+    return {
+      mode: mission.escrowMode,
+      escrowAddress: mission.budgetAddress,
+      covenantId: mission.covenantId,
+      lockTxid: lock?.lockTxid ?? null,
+      releaseTxid,
+      settled: Boolean(settle),
+    };
+  }
+
   async listMissions(): Promise<Mission[]> {
     const missions = await this.index.listMissions();
     return Promise.all(missions.map((m) => this.getMission(m.id) as Promise<Mission>));
@@ -127,7 +149,17 @@ export abstract class BaseLedger implements MissionLedger {
 
   async settle(missionId: string, plan: SettlementPlanInput): Promise<PublishResult> {
     const parsed = SettlementPlan.parse(plan);
-    return this.publishCommitment(settlementCommitmentInput(missionId, parsed));
+    // Release the budget escrow on-chain (covenant: arbiter-signed spend), then
+    // record the SETTLE commitment referencing the release txid.
+    const release = await this.settleEscrow(missionId);
+    const input = settlementCommitmentInput(missionId, parsed);
+    input.body = { ...(input.body ?? {}), escrowReleaseTxid: release.txid, escrowReleaseNote: release.note };
+    return this.publishCommitment(input);
+  }
+
+  /** Release the mission's budget escrow at settlement. Default: nothing on-chain. */
+  protected async settleEscrow(_missionId: string): Promise<EscrowRelease> {
+    return { txid: null, note: "no escrow release" };
   }
 
   protected async requireMission(missionId: string): Promise<Mission> {

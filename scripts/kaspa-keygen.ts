@@ -5,7 +5,7 @@
  *
  * Prints a BIP39 mnemonic and the derived kaspatest: address. Put the mnemonic
  * in `.env` as KASPA_MNEMONIC, then fund the address from the testnet faucet:
- *   https://faucet.kaspanet.io
+ *   https://faucet-tn10.kaspanet.io
  *
  * TESTNET ONLY. These are throwaway credentials — never reuse on mainnet.
  */
@@ -29,7 +29,7 @@ function main() {
   console.log(`Address         : ${address}\n`);
   console.log("Next steps:");
   console.log("  1. Add to .env:  KASPA_MNEMONIC=\"<phrase above>\"  and  LEDGER=kaspa");
-  console.log(`  2. Fund it:      https://faucet.kaspanet.io  (paste the address)`);
+  console.log(`  2. Fund it:      https://faucet-tn10.kaspanet.io  (paste the address)`);
   console.log("  3. Verify:       pnpm hello:mission\n");
 }
 

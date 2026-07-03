@@ -28,8 +28,30 @@ export interface EscrowLock {
   note: string;
 }
 
+export interface EscrowRelease {
+  /** Txid of the on-chain release spend, or null (nothing on-chain to release). */
+  txid: string | null;
+  note: string;
+}
+
+/** Escrow state for a mission, surfaced to the UI (the covenant highlight). */
+export interface EscrowInfo {
+  mode: EscrowMode;
+  escrowAddress: string;
+  covenantId: string | null;
+  lockTxid: string | null; // funded the covenant escrow
+  releaseTxid: string | null; // arbiter-signed release at settlement
+  settled: boolean;
+}
+
 export interface BudgetEscrow {
   readonly mode: EscrowMode;
   /** Establish the escrow for a mission's budget; funds it on-chain when possible. */
   lock(args: { missionId: string; budgetKas: number }): Promise<EscrowLock>;
+  /**
+   * Release the escrow at settlement. For the covenant escrow this is a real
+   * arbiter-signed P2SH spend that returns the budget to the treasury (or pays
+   * agents); for the simple/mock escrows it is a no-op.
+   */
+  release(args: { lock: EscrowLock; refundAddress: string }): Promise<EscrowRelease>;
 }

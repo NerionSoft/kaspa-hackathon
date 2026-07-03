@@ -20,7 +20,7 @@ import { probeCovenants } from "@/mission-ledger/escrow/probe";
 import { buildEscrowScript } from "@/mission-ledger/escrow/covenant-script";
 import { agentActor } from "@/domain/enums";
 
-const MIN_KAS = 1; // enough for a couple of self-sends + fees
+const MIN_KAS = 3; // budget escrow (2) + a few self-send commitments + fees
 const explorer = (txid: string) => `${env.kaspa.explorerUrl.replace(/\/$/, "")}/txs/${txid}`;
 
 async function main() {
@@ -49,7 +49,7 @@ async function main() {
 
   if (balance < MIN_KAS) {
     console.log("⏳ Address not funded yet. Fund it, then re-run `pnpm hello:mission`:");
-    console.log(`   Faucet : https://faucet.kaspanet.io`);
+    console.log(`   Faucet : https://faucet-tn10.kaspanet.io`);
     console.log(`   Address: ${address}\n`);
     await client.disconnect();
     return;
@@ -64,13 +64,16 @@ async function main() {
     title: "Hello Mission",
     objective: "Smoke-test the Kaspa Mission Ledger on testnet-10.",
     target: "juice-shop.internal.staging",
-    budgetKas: 5,
+    budgetKas: 2,
     rules: "Passive only. Active exploitation requires human approval.",
-    policy: { perAgentBudgetCapKas: 2, humanApprovalThresholdKas: 1, highImpactActions: ["active_exploit"] },
+    policy: { perAgentBudgetCapKas: 1, humanApprovalThresholdKas: 1, highImpactActions: ["active_exploit"] },
     createdBy: "user:sam",
   });
-  console.log(`   missionId: ${missionId}`);
-  console.log(`   genesis  : ${explorer(txid)}\n`);
+  const localMission = await ledger.getMission(missionId);
+  console.log(`   missionId : ${missionId}`);
+  console.log(`   genesis   : ${explorer(txid)}`);
+  console.log(`   escrow    : ${localMission?.escrowMode} @ ${localMission?.budgetAddress}`);
+  console.log(`   covenant  : ${localMission?.covenantId ?? "—"}  (budget locked on-chain — open the escrow address in the explorer)\n`);
 
   console.log("② Publishing a commitment on-chain…");
   const c = await ledger.publishCommitment({
@@ -97,8 +100,26 @@ async function main() {
   const chainMission = await indexer.getMission(address, missionId);
   console.log(`   mission read back: "${chainMission?.title}" budget=${chainMission?.budgetKas} KAS\n`);
 
+  console.log("④ Settling on-chain — releasing the covenant escrow (arbiter-signed spend)…");
+  const settle = await ledger.settle(missionId, {
+    outcome: "completed",
+    payouts: {},
+    refundKas: 2,
+    rationale: "Hello mission complete; release the covenant escrow back to the treasury.",
+  });
+  console.log(`   settle tx : ${explorer(settle.txid)}`);
+  const finalLog = await ledger.getMissionLog(missionId);
+  const settleC = finalLog.find((c) => c.type === "SETTLE");
+  const body = (settleC?.payload as { b?: { escrowReleaseTxid?: string | null; escrowReleaseNote?: string } }).b;
+  if (body?.escrowReleaseTxid) {
+    console.log(`   escrow release tx: ${explorer(body.escrowReleaseTxid)}  ← covenant funds released`);
+  } else {
+    console.log(`   escrow release: ${body?.escrowReleaseNote ?? "(none)"}`);
+  }
+
   await client.disconnect();
-  console.log("✓ Wrote and read back a mission + commitment on the Kaspa testnet.\n");
+  console.log("\n✓ Full on-chain covenant flow: budget LOCKED in a covenant escrow → agent");
+  console.log("  commitments → escrow RELEASED at settlement, all as real Kaspa testnet txs.\n");
 }
 
 main().catch((err) => {

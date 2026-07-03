@@ -1,5 +1,5 @@
 import type { KaspaClient } from "../kaspa/client";
-import type { BudgetEscrow, EscrowLock } from "./types";
+import type { BudgetEscrow, EscrowLock, EscrowRelease } from "./types";
 
 /**
  * Code-enforced budget escrow (the documented §4.4 fallback).
@@ -26,5 +26,10 @@ export class SimpleEscrow implements BudgetEscrow {
       lockTxid: null,
       note: `code-enforced escrow (${this.reason})`,
     };
+  }
+
+  async release(): Promise<EscrowRelease> {
+    // No on-chain lock to unwind — the budget stayed at the operator address.
+    return { txid: null, note: "code-enforced escrow — settlement is journaled, no release spend" };
   }
 }

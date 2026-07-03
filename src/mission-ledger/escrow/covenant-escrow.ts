@@ -1,7 +1,7 @@
 import { getLogger } from "@/infrastructure/logging/logger";
 import type { KaspaClient } from "../kaspa/client";
 import { buildEscrowScript, computeCovenantId } from "./covenant-script";
-import type { BudgetEscrow, EscrowLock } from "./types";
+import type { BudgetEscrow, EscrowLock, EscrowRelease } from "./types";
 
 const logger = getLogger("CovenantEscrow");
 
@@ -65,5 +65,20 @@ export class CovenantEscrow implements BudgetEscrow {
       lockTxid,
       note,
     };
+  }
+
+  async release({ lock, refundAddress }: { lock: EscrowLock; refundAddress: string }): Promise<EscrowRelease> {
+    if (!lock.lockTxid || !lock.redeemScriptHex) {
+      return { txid: null, note: "escrow was never funded on-chain; nothing to release" };
+    }
+    try {
+      const txid = await this.client.releaseEscrow(lock.escrowAddress, lock.redeemScriptHex, refundAddress);
+      logger.info("Covenant escrow settled", { escrowAddress: lock.escrowAddress, txid });
+      return { txid, note: "covenant escrow released to treasury (arbiter-signed spend)" };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.warn("Covenant escrow release failed", { escrowAddress: lock.escrowAddress, error: msg });
+      return { txid: null, note: `escrow release failed: ${msg}` };
+    }
   }
 }

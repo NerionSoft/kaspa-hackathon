@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { env } from "@/infrastructure/config/env";
 
 /**
@@ -47,9 +48,18 @@ export default function HomePage() {
         </p>
       </div>
 
-      <p className="font-mono text-xs text-[var(--color-muted)]">
-        Socle prêt · dashboard cockpit à venir (étape 4)
-      </p>
+      <div className="flex items-center gap-4">
+        <Link
+          href="/marketplace"
+          className="inline-flex items-center gap-2 rounded-[var(--radius)] border px-4 py-2 font-mono text-sm"
+          style={{ borderColor: "var(--color-kaspa)", color: "var(--color-kaspa)" }}
+        >
+          Agent Marketplace →
+        </Link>
+        <span className="font-mono text-xs text-[var(--color-muted)]">
+          Cockpit de mission à venir (étape 4)
+        </span>
+      </div>
     </main>
   );
 }

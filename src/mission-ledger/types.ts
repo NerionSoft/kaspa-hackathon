@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { Actor, CommitmentType, HUMAN_OPERATOR } from "@/domain/enums";
 import type { Commitment, Mission } from "@/domain/entities";
+import type { EscrowInfo } from "./escrow/types";
 
 /**
  * The framework-agnostic Mission Ledger SDK contract.
@@ -99,6 +100,9 @@ export interface MissionLedger {
 
   /** Fetch the mission entity (from its genesis payload). */
   getMission(missionId: string): Promise<Mission | null>;
+
+  /** Escrow state (covenant lock/release txids) for the UI. */
+  getEscrow(missionId: string): Promise<EscrowInfo | null>;
 
   /** List all missions known to this ledger. */
   listMissions(): Promise<Mission[]>;

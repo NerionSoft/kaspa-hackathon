@@ -1,0 +1,568 @@
+/*
+ * Agent Marketplace — LIGHT "SOC" theme, scoped to `.mkt`.
+ *
+ * The global <body> is dark (command-center idiom); the marketplace surface is a
+ * light board that must fully cover the viewport. All tokens and base element
+ * styles below are scoped under `.mkt` so nothing leaks into the dark app.
+ *
+ * Colour discipline: text is always dark or Kaspa-green (never light grey).
+ * Teal / --kaspa* is RESERVED for Kaspa / on-chain / confirmed elements only.
+ */
+
+.mkt {
+  /* --- design tokens (light) --- */
+  --bg: #eef2f2;
+  --surface: #fff;
+  --surface-2: #eef4f3;
+  --border: #cdd9d8;
+  --border-strong: #b6c6c4;
+  --text: #0c1a17;
+  --muted: #1c3a33;
+  --faint: #3c4b46;
+  --kaspa: #0e9c86;
+  --kaspa-bright: #2fd9bc;
+  --kaspa-ink: #075246;
+  --kaspa-wash: #e3f7f2;
+  --violet: #5a2f96;
+  --violet-wash: #f2ecfb;
+  --ok: #1f7a33;
+  --warn: #b8620a;
+  --danger: #c1121f;
+
+  --mkt-mono: var(--font-plex-mono, ui-monospace, monospace);
+  --mkt-sans: var(--font-plex-sans, system-ui, sans-serif);
+
+  --mkt-shadow: 0 1px 2px rgba(12, 40, 34, 0.08), 0 4px 16px rgba(12, 40, 34, 0.07);
+  --mkt-shadow-lg: 0 14px 44px rgba(12, 40, 34, 0.18);
+
+  min-height: 100vh;
+  background: radial-gradient(900px 500px at 82% -12%, #d6f2ec 0%, transparent 55%), var(--bg);
+  color: var(--text);
+  font-family: var(--mkt-sans);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.mkt *,
+.mkt *::before,
+.mkt *::after {
+  box-sizing: border-box;
+}
+
+.mkt a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.mkt .mono {
+  font-family: var(--mkt-mono);
+}
+.mkt .num {
+  font-family: var(--mkt-mono);
+  font-variant-numeric: tabular-nums;
+}
+.mkt .label {
+  font-family: var(--mkt-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* --- header --- */
+.mkt-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 13px 22px;
+  background: rgba(238, 242, 242, 0.86);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--border);
+}
+.mkt-brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--text);
+}
+.mkt-brand .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--kaspa-bright);
+  box-shadow: 0 0 9px var(--kaspa-bright);
+  flex: none;
+}
+.mkt-brand .sep {
+  color: var(--border-strong);
+  font-weight: 400;
+}
+.mkt-brand .tag {
+  font-family: var(--mkt-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kaspa-ink);
+  font-weight: 700;
+}
+.mkt-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.mkt-nav a {
+  font-family: var(--mkt-mono);
+  font-size: 12px;
+  color: var(--faint);
+  padding: 7px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: 0.18s;
+  font-weight: 600;
+}
+.mkt-nav a:hover {
+  color: var(--kaspa-ink);
+  border-color: var(--border-strong);
+  background: var(--surface);
+}
+.mkt-nav a.primary {
+  color: #032a24;
+  background: var(--kaspa-bright);
+  border-color: var(--kaspa);
+  font-weight: 700;
+}
+.mkt-nav a.primary:hover {
+  background: #4fe6cd;
+}
+
+/* --- board layout --- */
+.mkt-main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 22px;
+}
+.mkt-intro {
+  margin: 4px 2px 20px;
+}
+.mkt-intro h1 {
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  color: var(--text);
+}
+.mkt-intro h1 b {
+  color: var(--kaspa);
+}
+.mkt-intro p {
+  margin: 0;
+  max-width: 780px;
+  font-size: 13.5px;
+  color: var(--faint);
+}
+.mkt-intro p b {
+  color: var(--text);
+}
+
+.mkt-board {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+@media (max-width: 900px) {
+  .mkt-board {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mkt-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.mkt-col-h {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0 2px 2px;
+}
+.mkt-col-h .h {
+  font-family: var(--mkt-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kaspa-ink);
+  font-weight: 700;
+}
+.mkt-col-h .sub {
+  font-family: var(--mkt-mono);
+  font-size: 9.5px;
+  color: var(--faint);
+}
+
+/* --- mission card (demand) --- */
+.mkt-mcard {
+  display: block;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  box-shadow: var(--mkt-shadow);
+  transition: 0.2s;
+}
+.mkt-mcard:hover {
+  border-color: var(--kaspa);
+  transform: translateY(-2px);
+}
+.mkt-mcard .top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mkt-mcard .client {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.mkt-mcard .avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-family: var(--mkt-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  flex: none;
+}
+.mkt-mcard .who {
+  min-width: 0;
+}
+.mkt-mcard .who .nm {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mkt-mcard .who .org {
+  font-family: var(--mkt-mono);
+  font-size: 9.5px;
+  color: var(--faint);
+}
+.mkt-mcard h3 {
+  font-size: 14px;
+  line-height: 1.3;
+  margin: 11px 0 10px;
+  color: var(--text);
+}
+.mkt-mcard .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--mkt-mono);
+  font-size: 11px;
+  color: var(--faint);
+  padding: 6px 0 0;
+  border-top: 1px dashed var(--border);
+  margin-top: 8px;
+}
+.mkt-mcard .row .deadline b {
+  color: var(--text);
+}
+
+/* --- badges & pills --- */
+.mkt-badge {
+  font-family: var(--mkt-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 99px;
+  padding: 2px 8px;
+  display: inline-block;
+  font-weight: 700;
+  border: 1px solid;
+}
+/* domain badges — neutral/violet palette; teal stays reserved for Kaspa */
+.mkt-badge.dom-security {
+  color: #7a1420;
+  background: #fdeaec;
+  border-color: #f2c4c9;
+}
+.mkt-badge.dom-data {
+  color: var(--violet);
+  background: var(--violet-wash);
+  border-color: #ddd0f0;
+}
+.mkt-badge.dom-research {
+  color: #0a4a6b;
+  background: #e6f2fa;
+  border-color: #bcdcef;
+}
+.mkt-badge.dom-devops {
+  color: #6b3a00;
+  background: #fbf1e2;
+  border-color: #e6c48f;
+}
+.mkt-badge.dom-finance {
+  color: #12332c;
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+.mkt-status {
+  font-family: var(--mkt-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 99px;
+  padding: 2px 8px;
+  font-weight: 700;
+  border: 1px solid;
+  white-space: nowrap;
+}
+.mkt-status.s-open {
+  color: var(--kaspa-ink);
+  background: var(--kaspa-wash);
+  border-color: #bfe9df;
+}
+.mkt-status.s-recruiting {
+  color: var(--warn);
+  background: #fbf1e2;
+  border-color: #e6c48f;
+}
+.mkt-status.s-assigned,
+.mkt-status.s-running {
+  color: var(--violet);
+  background: var(--violet-wash);
+  border-color: #ddd0f0;
+}
+.mkt-status.s-completed {
+  color: var(--ok);
+  background: #e6f4e9;
+  border-color: #b7dcbf;
+}
+.mkt-status.s-aborted {
+  color: var(--danger);
+  background: #fdeaec;
+  border-color: #f2c4c9;
+}
+
+/* budget chip — value in KAS, teal (on-chain money) */
+.mkt-budget {
+  font-family: var(--mkt-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--kaspa-ink);
+  background: var(--kaspa-wash);
+  border: 1px solid #bfe9df;
+  border-radius: 99px;
+  padding: 2px 9px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* --- Kaspa hub (center) --- */
+.mkt-hub {
+  align-self: start;
+  position: sticky;
+  top: 76px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(180deg, #0c332c, #0a2925);
+  border: 1px solid var(--kaspa-ink);
+  border-radius: 14px;
+  padding: 24px 20px;
+  color: #eafcf7;
+  box-shadow: 0 10px 34px rgba(7, 82, 70, 0.28);
+}
+.mkt-hub .hk {
+  font-family: var(--mkt-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--kaspa-bright);
+  font-weight: 700;
+}
+.mkt-hub .ht {
+  font-size: 21px;
+  font-weight: 700;
+  margin: 7px 0 2px;
+  letter-spacing: -0.01em;
+}
+.mkt-hub .hs {
+  font-size: 11.5px;
+  color: #a9e8db;
+}
+.mkt-hub .hchips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 16px;
+}
+.mkt-hub .hchips span {
+  font-family: var(--mkt-mono);
+  font-size: 10px;
+  padding: 4px 9px;
+  border-radius: 99px;
+  border: 1px solid rgba(47, 217, 188, 0.4);
+  color: #d6fbf2;
+  background: rgba(47, 217, 188, 0.1);
+}
+.mkt-hub .flowlbl {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 18px;
+  font-family: var(--mkt-mono);
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7fd8c7;
+}
+.mkt-hub .flowlbl span:first-child::before {
+  content: "\25B6  ";
+}
+.mkt-hub .flowlbl span:last-child::after {
+  content: "  \25C0";
+}
+
+/* --- team card (supply) --- */
+.mkt-tcard {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 13px 14px;
+  box-shadow: var(--mkt-shadow);
+  transition: 0.2s;
+}
+.mkt-tcard:hover {
+  border-color: var(--kaspa);
+  transform: translateY(-2px);
+}
+.mkt-tcard .tt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.mkt-tcard .tt b {
+  font-size: 13.5px;
+  color: var(--text);
+}
+.mkt-tcard .rep {
+  font-family: var(--mkt-mono);
+  font-size: 11px;
+  color: var(--warn);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.mkt-tcard .doms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.mkt-tcard .tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.mkt-tcard .roletag {
+  font-family: var(--mkt-mono);
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 2px 7px;
+}
+.mkt-tcard .meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+  font-family: var(--mkt-mono);
+  font-size: 10.5px;
+}
+.mkt-tcard .meta .oc {
+  color: var(--kaspa-ink);
+  font-weight: 700;
+}
+.mkt-tcard .meta .price {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* --- insight + positioning pills --- */
+.mkt-insight {
+  margin: 26px auto 0;
+  background: var(--kaspa-wash);
+  border: 1px solid #bfe9df;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 13px;
+  color: var(--kaspa-ink);
+  display: flex;
+  gap: 11px;
+  align-items: flex-start;
+  max-width: 1000px;
+}
+.mkt-insight .ib {
+  font-family: var(--mkt-mono);
+  color: var(--kaspa-ink);
+  font-weight: 700;
+  flex: none;
+}
+.mkt-insight b {
+  color: var(--text);
+}
+.mkt-pills {
+  margin: 18px auto 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.mkt-pill {
+  font-family: var(--mkt-mono);
+  font-size: 12px;
+  padding: 7px 15px;
+  border-radius: 99px;
+  border: 1.5px solid var(--kaspa);
+  color: var(--kaspa-ink);
+  background: var(--surface);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt *,
+  .mkt *::before,
+  .mkt *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.05ms !important;
+  }
+}

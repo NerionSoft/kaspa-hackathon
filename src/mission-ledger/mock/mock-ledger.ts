@@ -1,7 +1,7 @@
 import type { OnchainStatus } from "@/domain/enums";
 import { BaseLedger } from "../base-ledger";
 import { MockEscrow } from "../escrow/mock-escrow";
-import type { EscrowLock } from "../escrow/types";
+import type { EscrowLock, EscrowRelease } from "../escrow/types";
 import { sha256Hex } from "../protocol";
 import { LedgerIndex } from "../store/ledger-index";
 
@@ -38,6 +38,12 @@ export class MockLedger extends BaseLedger {
 
   protected async lockBudget(missionId: string, budgetKas: number): Promise<EscrowLock> {
     return this.escrow.lock({ missionId, budgetKas });
+  }
+
+  protected async settleEscrow(missionId: string): Promise<EscrowRelease> {
+    const lock = this.escrowLocks.get(missionId);
+    if (!lock) return { txid: null, note: "no escrow lock" };
+    return this.escrow.release({ lock, refundAddress: "kaspatest:mocktreasury" });
   }
 
   explorerTxUrl(): string {

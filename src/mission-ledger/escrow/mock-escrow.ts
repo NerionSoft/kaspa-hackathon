@@ -1,5 +1,5 @@
 import { sha256Hex } from "../protocol";
-import type { BudgetEscrow, EscrowLock } from "./types";
+import type { BudgetEscrow, EscrowLock, EscrowRelease } from "./types";
 
 /**
  * Simulated covenant escrow for the MockLedger. Produces deterministic, realistic
@@ -20,6 +20,14 @@ export class MockEscrow implements BudgetEscrow {
       redeemScriptHex: null,
       lockTxid: `mock-lock-${covenantId.slice(0, 16)}`,
       note: "simulated covenant escrow (mock ledger)",
+    };
+  }
+
+  async release({ lock }: { lock: EscrowLock; refundAddress: string }): Promise<EscrowRelease> {
+    // Deterministic simulated release txid for the offline demo.
+    return {
+      txid: `mock-release-${sha256Hex(`release:${lock.escrowAddress}`).slice(0, 16)}`,
+      note: "simulated covenant release (mock ledger)",
     };
   }
 }

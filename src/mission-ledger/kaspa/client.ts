@@ -149,6 +149,80 @@ export class KaspaClient {
     return this.buildAndSubmit("fundEscrow", escrowAddress, amount);
   }
 
+  /**
+   * Release a covenant P2SH escrow: spend its UTXO with an arbiter (operator)
+   * signature back to `refundAddress`. This is the covenant settlement path — a
+   * standard P2SH spend where the input carries its live UTXO (value + scriptPubKey)
+   * so the sighash can be computed, and the signature is wrapped by the redeem script.
+   * Returns the release txid.
+   */
+  async releaseEscrow(
+    escrowAddress: string,
+    redeemScriptHex: string,
+    refundAddress: string,
+    opts: { txVersion?: number; sigOpCount?: number } = {},
+  ): Promise<string> {
+    return retry("releaseEscrow", () =>
+      this.releaseEscrowRaw(escrowAddress, redeemScriptHex, refundAddress, opts),
+    );
+  }
+
+  /** Single-attempt release build+submit (throws the raw RPC error — used for diagnostics). */
+  async releaseEscrowRaw(
+    escrowAddress: string,
+    redeemScriptHex: string,
+    refundAddress: string,
+    opts: { txVersion?: number; sigOpCount?: number } = {},
+  ): Promise<string> {
+    const rpc = await this.connect();
+    const {
+      Transaction, TransactionInput, TransactionOutput,
+      payToAddressScript, createInputSignature, payToScriptHashSignatureScript,
+    } = this.kaspa;
+    const txVersion = opts.txVersion ?? 0;
+    const sigOpCount = opts.sigOpCount ?? 1;
+
+    const { entries } = await rpc.getUtxosByAddresses([escrowAddress]);
+    if (!entries.length) {
+      throw new LedgerNetworkError(`no escrow UTXO to release at ${escrowAddress}`, { escrowAddress });
+    }
+    const total = entries.reduce((s, e) => s + e.amount, 0n);
+    // Post-Toccata compute mass for a P2SH checksig spend needs ~165900 sompi;
+    // 0.003 KAS gives comfortable margin (storage mass + per-input scaling).
+    const FEE = 300_000n;
+    if (total <= FEE) throw new LedgerNetworkError("escrow balance below the settlement fee");
+
+    const inputs = entries.map(
+      (e) =>
+        new TransactionInput({
+          previousOutpoint: e.outpoint,
+          signatureScript: "",
+          sequence: 0n,
+          sigOpCount,
+          utxo: e, // gives createInputSignature the value + scriptPublicKey for the sighash
+        }),
+    );
+    const tx = new Transaction({
+      version: txVersion,
+      inputs,
+      outputs: [new TransactionOutput(total - FEE, payToAddressScript(refundAddress))],
+      lockTime: 0n,
+      gas: 0n,
+      payload: "",
+      subnetworkId: "0000000000000000000000000000000000000000",
+    });
+
+    // Sign each covenant input with the arbiter key and wrap it in the redeem script.
+    for (let i = 0; i < inputs.length; i++) {
+      const sig = createInputSignature(tx, i, this.privateKey);
+      tx.inputs[i].signatureScript = payToScriptHashSignatureScript(redeemScriptHex, sig);
+    }
+
+    const res = await rpc.submitTransaction({ transaction: tx, allowOrphan: false });
+    logger.info("Covenant escrow released", { escrowAddress, txid: res.transactionId });
+    return res.transactionId;
+  }
+
   private async buildAndSubmit(
     label: string,
     toAddress: string,
@@ -195,7 +269,7 @@ export class KaspaClient {
     }
     throw new LedgerNetworkError(
       `No spendable UTXOs for ${this.address}. Fund it from the testnet faucet ` +
-        `(https://faucet.kaspanet.io) and retry.`,
+        `(https://faucet-tn10.kaspanet.io) and retry.`,
       { address: this.address },
     );
   }

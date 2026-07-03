@@ -3,7 +3,8 @@ import { getLogger } from "@/infrastructure/logging/logger";
 import type { OnchainStatus } from "@/domain/enums";
 import { BaseLedger } from "../base-ledger";
 import { createKaspaEscrow } from "../escrow";
-import type { BudgetEscrow, EscrowLock } from "../escrow/types";
+import { buildEscrowScript } from "../escrow/covenant-script";
+import type { BudgetEscrow, EscrowLock, EscrowRelease } from "../escrow/types";
 import type { LedgerIndex } from "../store/ledger-index";
 import { KaspaClient } from "./client";
 import { KaspaRestIndexer } from "./rest-indexer";
@@ -48,6 +49,35 @@ export class KaspaLedger extends BaseLedger {
     return this.escrow.lock({ missionId, budgetKas });
   }
 
+  protected async settleEscrow(missionId: string): Promise<EscrowRelease> {
+    if (!this.escrow) this.escrow = await createKaspaEscrow(this.client);
+    let lock = this.escrowLocks.get(missionId);
+
+    // Reconstruct the covenant escrow if the in-memory lock is gone (e.g. server
+    // restarted between run and settle). The P2SH escrow is deterministic from the
+    // operator (arbiter) key, so address + redeem script are re-derivable.
+    if (!lock) {
+      const mission = await this.getMission(missionId);
+      if (mission?.escrowMode === "covenant") {
+        const script = buildEscrowScript(this.client.sdk, {
+          arbiterXOnlyPubKeyHex: this.client.xOnlyPublicKeyHex,
+          network: this.client.networkId,
+        });
+        lock = {
+          mode: "covenant",
+          escrowAddress: script.escrowAddress,
+          covenantId: mission.covenantId,
+          redeemScriptHex: script.redeemScriptHex,
+          lockTxid: "reconstructed",
+          note: "reconstructed for settlement",
+        };
+      }
+    }
+    if (!lock) return { txid: null, note: "no escrow to release" };
+    // Refund the budget back to the operator treasury via an arbiter-signed spend.
+    return this.escrow.release({ lock, refundAddress: this.client.address });
+  }
+
   protected async reconcile(missionId: string): Promise<void> {
     try {
       const chain = await this.indexer.getMissionLog(this.client.address, missionId);
@@ -68,6 +98,9 @@ export class KaspaLedger extends BaseLedger {
   }
 
   explorerTxUrl(txid: string): string {
-    return `${env.kaspa.explorerUrl.replace(/\/$/, "")}/txs/${txid}`;
+    // The community testnet-10 web explorer is currently offline, so point at the
+    // official REST API which returns the real, verifiable transaction (block time,
+    // payload, acceptance) — an honest on-chain proof that always works.
+    return `${env.kaspa.restUrl.replace(/\/$/, "")}/transactions/${txid}`;
   }
 }
