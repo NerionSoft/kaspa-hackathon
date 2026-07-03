@@ -1,0 +1,420 @@
+/* Agent Marketplace — detail / recruitment / post-mission styles.
+ * Tokens (--bg, --surface, --kaspa, …) are defined by the marketplace layout
+ * on the `.mkt` wrapper; these rules only consume them. Class names are
+ * prefixed `det-` to avoid collisions with sibling-owned components. */
+
+.det-page {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 26px 22px 60px;
+  font-family: var(--font-plex-sans, ui-sans-serif, system-ui, sans-serif);
+  color: var(--text);
+}
+.det-mono {
+  font-family: var(--font-plex-mono, ui-monospace, "SF Mono", Menlo, monospace);
+}
+.det-num {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-plex-mono, ui-monospace, "SF Mono", Menlo, monospace);
+}
+.det-label {
+  font-family: var(--font-plex-mono, ui-monospace, "SF Mono", Menlo, monospace);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.det-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-plex-mono, ui-monospace, monospace);
+  font-size: 12px;
+  color: var(--kaspa-ink);
+  text-decoration: none;
+  margin-bottom: 16px;
+}
+.det-back:hover { text-decoration: underline; }
+
+/* --- header --------------------------------------------------------------- */
+.det-head { margin-bottom: 22px; }
+.det-head h1 {
+  font-size: 24px;
+  letter-spacing: -0.01em;
+  margin: 6px 0 8px;
+  color: var(--text);
+}
+.det-head .det-sub {
+  font-size: 14px;
+  color: var(--muted);
+  max-width: 780px;
+  margin: 0;
+  line-height: 1.5;
+}
+.det-badges { display: flex; flex-wrap: wrap; gap: 7px; margin: 10px 0 0; }
+.det-badge {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--kaspa-ink);
+  background: var(--kaspa-wash);
+  border: 1px solid #bfe9df;
+  border-radius: 99px;
+  padding: 3px 9px;
+  font-weight: 600;
+}
+.det-tag {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 10px;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 7px;
+}
+
+/* --- layout grids --------------------------------------------------------- */
+.det-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 860px) { .det-grid { grid-template-columns: 1fr; } }
+
+.det-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  box-shadow: 0 1px 2px rgba(12, 40, 34, 0.08), 0 4px 16px rgba(12, 40, 34, 0.07);
+}
+.det-card + .det-card { margin-top: 16px; }
+.det-card h2 {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kaspa-ink);
+  font-weight: 700;
+  margin: 0 0 12px;
+}
+
+/* key/value rows */
+.det-kv { display: flex; flex-direction: column; gap: 0; }
+.det-kv .row {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-top: 1px dashed var(--border);
+  font-size: 13px;
+}
+.det-kv .row:first-child { border-top: none; }
+.det-kv .k {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.det-kv .v { color: var(--text); text-align: right; }
+.det-kv .v.mono {
+  font-family: var(--font-plex-mono, monospace);
+  font-variant-numeric: tabular-nums;
+}
+.det-kv .v.teal { color: var(--kaspa-ink); }
+
+/* --- reputation card ------------------------------------------------------ */
+.det-rep .rep-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.det-rep .stars {
+  font-size: 20px;
+  letter-spacing: 2px;
+  line-height: 1;
+  color: var(--warn);
+}
+.det-rep .stars .off { color: var(--border-strong); }
+.det-rep .rating {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.det-rep .rating small { font-size: 12px; color: var(--muted); font-weight: 500; }
+.det-rep .onchain {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 10.5px;
+  color: var(--kaspa-ink);
+  background: var(--kaspa-wash);
+  border: 1px solid #bfe9df;
+  border-radius: 99px;
+  padding: 3px 9px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.det-rep .derived {
+  font-size: 11.5px;
+  color: var(--muted);
+  border-top: 1px dashed var(--border);
+  margin-top: 12px;
+  padding-top: 10px;
+  line-height: 1.45;
+}
+.det-metric { margin-top: 12px; }
+.det-metric .mrow {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 12px;
+}
+.det-metric .mrow .ml { color: var(--muted); }
+.det-metric .mrow .mv {
+  font-family: var(--font-plex-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--text);
+}
+.det-metric .track {
+  height: 7px;
+  border-radius: 99px;
+  background: #d5e2e0;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  margin-top: 4px;
+}
+.det-metric .fill {
+  height: 100%;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--kaspa), var(--kaspa-bright));
+}
+.det-metric .fill.warnfill { background: linear-gradient(90deg, var(--warn), #f0a33a); }
+
+/* --- roles table (team) --------------------------------------------------- */
+.det-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.det-table th {
+  text-align: left;
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 9.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  border-bottom: 1px solid var(--border-strong);
+  padding: 6px 8px;
+  font-weight: 600;
+}
+.det-table td {
+  padding: 9px 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+  color: var(--text);
+}
+.det-table tr:last-child td { border-bottom: none; }
+.det-table .rname {
+  font-family: var(--font-plex-mono, monospace);
+  font-weight: 700;
+  color: var(--text);
+}
+.det-table .rdesc { font-size: 11.5px; color: var(--muted); }
+.det-model {
+  display: inline-block;
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 10.5px;
+  color: var(--violet);
+  background: var(--violet-wash, #f2ecfb);
+  border: 1px solid #ddd0f0;
+  border-radius: 4px;
+  padding: 2px 7px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.det-tier {
+  font-family: var(--font-plex-mono, monospace);
+  font-weight: 700;
+  color: var(--warn);
+}
+.det-kas {
+  font-family: var(--font-plex-mono, monospace);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--text);
+  font-weight: 600;
+}
+.det-tablescroll { overflow-x: auto; }
+
+/* --- recruitment view ----------------------------------------------------- */
+.det-chosen {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: linear-gradient(180deg, #0c332c, #0a2925);
+  border: 1px solid var(--kaspa-ink);
+  border-radius: 10px;
+  padding: 14px 18px;
+  color: #eafcf7;
+  margin-bottom: 16px;
+}
+.det-chosen .ck { font-family: var(--font-plex-mono, monospace); font-size: 9.5px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--kaspa-bright); }
+.det-chosen .cname { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; }
+.det-chosen .crep { font-family: var(--font-plex-mono, monospace); font-size: 13px; color: #ffd79a; font-weight: 700; }
+.det-chosen .cright { text-align: right; }
+.det-chosen .cright .crep-lbl { font-family: var(--font-plex-mono, monospace); font-size: 9px; letter-spacing: 0.06em; text-transform: uppercase; color: #7fd8c7; }
+
+.det-rationale {
+  font-size: 12.5px;
+  color: var(--kaspa-ink);
+  background: var(--kaspa-wash);
+  border: 1px solid #bfe9df;
+  border-radius: 9px;
+  padding: 11px 14px;
+  margin-top: 4px;
+  line-height: 1.5;
+}
+.det-rationale b { color: var(--text); }
+
+.det-alloc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--border);
+}
+.det-alloc .a {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.det-alloc .a .av {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.det-alloc .a .av.teal { color: var(--kaspa-ink); }
+.det-alloc .a .av.reserve { color: var(--muted); }
+
+.det-rejected { margin-top: 8px; }
+.det-rejected .rj {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-top: 1px dashed var(--border);
+  font-size: 12px;
+}
+.det-rejected .rj:first-child { border-top: none; }
+.det-rejected .rj .rjn {
+  font-family: var(--font-plex-mono, monospace);
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--border-strong);
+  white-space: nowrap;
+  min-width: 150px;
+}
+.det-rejected .rj .rjr { color: var(--muted); }
+
+/* --- post-mission form ---------------------------------------------------- */
+.det-form { display: flex; flex-direction: column; gap: 16px; }
+.det-fieldrow { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 620px) { .det-fieldrow { grid-template-columns: 1fr; } }
+.det-field { display: flex; flex-direction: column; gap: 5px; }
+.det-field.full { grid-column: 1 / -1; }
+.det-field label {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.det-field input,
+.det-field select,
+.det-field textarea {
+  font-family: var(--font-plex-sans, system-ui, sans-serif);
+  font-size: 13.5px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  padding: 9px 11px;
+  width: 100%;
+}
+.det-field input:focus,
+.det-field select:focus,
+.det-field textarea:focus {
+  outline: 2px solid var(--kaspa);
+  outline-offset: 1px;
+  border-color: var(--kaspa);
+}
+.det-field textarea { resize: vertical; min-height: 72px; line-height: 1.5; }
+.det-field .hint { font-size: 11px; color: var(--muted); }
+.det-field.kas input { font-family: var(--font-plex-mono, monospace); font-variant-numeric: tabular-nums; }
+
+.det-form-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+.det-btn {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 13px;
+  color: #032a24;
+  background: var(--kaspa-bright);
+  border: 1px solid var(--kaspa);
+  border-radius: 6px;
+  padding: 10px 18px;
+  cursor: pointer;
+  font-weight: 700;
+  transition: 0.18s;
+}
+.det-btn:hover { background: #4fe6cd; }
+.det-btn:disabled { opacity: 0.5; cursor: default; }
+.det-err {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 12px;
+  color: var(--danger);
+  background: #fadede;
+  border: 1px solid #eab8b8;
+  border-radius: 6px;
+  padding: 9px 12px;
+}
+.det-fielderr {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 11px;
+  color: var(--danger);
+}
+
+.det-section-title {
+  font-family: var(--font-plex-mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kaspa-ink);
+  font-weight: 700;
+  border-top: 1px dashed var(--border);
+  padding-top: 14px;
+  margin: 2px 0 -4px;
+}
+
+.det-empty {
+  font-size: 13px;
+  color: var(--muted);
+  padding: 8px 0;
+}
