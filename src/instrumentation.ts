@@ -1,7 +1,10 @@
 import { registerErrorMappings } from "@/infrastructure/http/api-handler";
-import { exampleErrorMappings } from "@/example-hexagone/adapters/http/example-error-mappings";
+import { ledgerErrorMappings } from "@/mission-ledger/errors";
 
-// TODO(starter): Register error mappings for each hexagone here
+/**
+ * Server startup hook. Registers each module's domain-error → HTTP status mappings
+ * so the generic apiHandler stays domain-agnostic.
+ */
 export function register() {
-  registerErrorMappings(exampleErrorMappings);
+  registerErrorMappings(ledgerErrorMappings);
 }

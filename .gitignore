@@ -47,4 +47,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-src/infrastructure/db/generated/prisma
+# local reconstructible data (ledger index + Mastra workflow state)
+/.data/
