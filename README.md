@@ -98,8 +98,12 @@ cp .env.example .env
 pnpm dev          # → http://localhost:3000
 ```
 
+👉 **Start with the guided demo:** open **[http://localhost:3000/demo](http://localhost:3000/demo)** —
+a showcase walkthrough of a full mission (genesis → escrow lock → agent commitments →
+budget gate → settlement), anchored on a deterministic mock ledger. Nothing to configure.
+
 ```bash
-# See the governance engine in action (full workflow + R1 budget gate)
+# Or watch the governance engine from the terminal (full workflow + R1 budget gate)
 pnpm run-mission
 ```
 
@@ -114,6 +118,8 @@ pnpm keygen
 # 2. In .env:
 #    LEDGER="kaspa"
 #    KASPA_PRIVATE_KEY="…"   (or KASPA_MNEMONIC)
+#    VENICE_API_KEY="…"      ← real LLM agents (planner / recon) via Venice.ai
+#                              (leave empty to keep the deterministic stub)
 
 # 3. Fund the printed kaspatest: address via the faucet
 #    → https://faucet-tn10.kaspanet.io
@@ -121,6 +127,9 @@ pnpm keygen
 # 4. Write a real mission to the chain (lock escrow → commitments → release)
 pnpm hello:mission
 ```
+
+This is the **real version**: agents reasoning through **Venice.ai**, every decision
+committed to **Kaspa testnet-10**, budget locked in a **covenant escrow**.
 
 The script prints an explorer link for every transaction: genesis, covenant-escrow lock,
 agent commitments, then escrow release at settlement.
