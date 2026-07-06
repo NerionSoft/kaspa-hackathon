@@ -30,7 +30,7 @@
     "dotenv": "^17.4.2",
     "framer-motion": "^12.0.0",
     "kaspa-wasm": "file:vendor/kaspa-wasm",
-    "lucide-react": "^0.550.0",
+    "lucide-react": "^1.23.0",
     "next": "16.2.6",
     "pino": "^10.3.1",
     "recharts": "^3.0.0",
